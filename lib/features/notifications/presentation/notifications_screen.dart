@@ -6,34 +6,39 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/constants/app_constants.dart';
 import '../domain/models.dart';
 
-// Mock Provider for Notifications
-final notificationsProvider = StateProvider<List<AppNotification>>((ref) {
-  return [
-    AppNotification(
-      id: '1',
-      title: 'Welcome to FEMA!',
-      body: 'Get started by exploring our courses in the library.',
-      timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-      type: NotificationType.update,
-    ),
-    AppNotification(
-      id: '2',
-      title: 'New Math Content Available',
-      body: 'Grade 8 Algebra Part 2 has been added.',
-      timestamp: DateTime.now().subtract(const Duration(days: 1)),
-      type: NotificationType.message,
-      actionRoute: '/library',
-    ),
-    AppNotification(
-      id: '3',
-      title: 'Quiz Reminder',
-      body: 'Don\'t forget to complete your placement quiz!',
-      timestamp: DateTime.now().subtract(const Duration(days: 2)),
-      type: NotificationType.alert,
-      isRead: true,
-    ),
-  ];
+import '../../auth/domain/auth_repository.dart';
+import '../../../core/services/firestore_service.dart';
+import '../domain/models.dart';
+
+// Stream Provider for Notifications
+final notificationsProvider = StreamProvider<List<AppNotification>>((ref) {
+  final authRepo = ref.watch(authRepositoryProvider);
+  final firestoreService = ref.watch(firestoreServiceProvider);
+  final user = authRepo.currentUser;
+
+  if (user == null) return Stream.value([]);
+
+  return firestoreService.getUserNotifications(user.uid).map((list) {
+    return list.map((data) => AppNotification(
+      id: data['id'],
+      title: data['title'] ?? '',
+      body: data['body'] ?? '',
+      timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      type: _parseNotificationType(data['type']),
+      isRead: data['isRead'] ?? false,
+      actionRoute: data['actionRoute'],
+    )).toList();
+  });
 });
+
+NotificationType _parseNotificationType(String? type) {
+  switch (type?.toLowerCase()) {
+    case 'message': return NotificationType.message;
+    case 'alert': return NotificationType.alert;
+    case 'achievement': return NotificationType.achievement;
+    default: return NotificationType.update;
+  }
+}
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
@@ -47,16 +52,20 @@ class NotificationsScreen extends ConsumerWidget {
         title: const Text('Notifications'),
         centerTitle: true,
       ),
-      body: notifications.isEmpty
-          ? _buildEmptyState()
-          : ListView.separated(
-              padding: const EdgeInsets.all(AppConstants.space16),
-              itemCount: notifications.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                return _NotificationTile(notification: notifications[index]);
-              },
-            ),
+      body: notificationsAsync.when(
+        data: (notifications) => notifications.isEmpty
+            ? _buildEmptyState()
+            : ListView.separated(
+                padding: const EdgeInsets.all(AppConstants.space16),
+                itemCount: notifications.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  return _NotificationTile(notification: notifications[index]);
+                },
+              ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
+      ),
     );
   }
 

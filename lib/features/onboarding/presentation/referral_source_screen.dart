@@ -40,8 +40,14 @@ class _ReferralSourceScreenState extends ConsumerState<ReferralSourceScreen> {
       selectedSource == 'Other' ? _otherController.text : null,
     );
     
-    final role = ref.read(onboardingProvider).role;
-    if (role == UserRole.parent) {
+    final state = ref.read(onboardingProvider);
+    if (state.isAddingChild) {
+      ref.read(onboardingProvider.notifier).finishAddingChild();
+      context.go('/home');
+      return;
+    }
+
+    if (state.role == UserRole.parent) {
       context.push('/onboarding/intro');
     } else {
       context.push('/onboarding/quiz-intro');

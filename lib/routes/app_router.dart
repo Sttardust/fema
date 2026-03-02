@@ -27,6 +27,8 @@ import '../features/onboarding/presentation/fema_intro_screen.dart';
 import '../features/library/presentation/library_screen.dart';
 import '../features/library/presentation/course_details_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
+import '../features/home/presentation/management_placeholder_screen.dart';
+import '../features/parent/presentation/child_security_screen.dart';
 
 // Placeholder screens for router setup
 class PlaceholderScreen extends StatelessWidget {
@@ -164,6 +166,34 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/teacher/classes',
+        builder: (context, state) => const ManagementPlaceholderScreen(
+          title: 'Class Management',
+          description: 'View and manage your student lists, attendance, and performance analytics.',
+          icon: Icons.group_outlined,
+        ),
+      ),
+      GoRoute(
+        path: '/admin/management',
+        builder: (context, state) => const ManagementPlaceholderScreen(
+          title: 'Admin Console',
+          description: 'Manage user roles, site configurations, and system-wide reports.',
+          icon: Icons.admin_panel_settings_outlined,
+        ),
+      ),
+      GoRoute(
+        path: '/admin/analytics',
+        builder: (context, state) => const ManagementPlaceholderScreen(
+          title: 'System Analytics',
+          description: 'Real-time metrics on user engagement, course popularity, and system health.',
+          icon: Icons.analytics_outlined,
+        ),
+      ),
+      GoRoute(
+        path: '/parent/security',
+        builder: (context, state) => const ChildSecurityScreen(),
       ),
     ],
   );

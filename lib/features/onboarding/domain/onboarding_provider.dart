@@ -71,6 +71,7 @@ class OnboardingState {
   final bool quizSkipped;
   final int? quizScore;
   final int currentStep;
+  final bool isAddingChild; // New flag for Phase 2
   
   // Parent specific
   final List<ChildProfile> children;
@@ -121,6 +122,7 @@ class OnboardingState {
     this.invitedEmail,
     this.invitedPhone,
     this.invitedTempPassword,
+    this.isAddingChild = false,
   });
 
   OnboardingState copyWith({
@@ -154,6 +156,7 @@ class OnboardingState {
     String? invitedEmail,
     String? invitedPhone,
     String? invitedTempPassword,
+    bool? isAddingChild,
   }) {
     return OnboardingState(
       role: role ?? this.role,
@@ -186,6 +189,7 @@ class OnboardingState {
       invitedEmail: invitedEmail ?? this.invitedEmail,
       invitedPhone: invitedPhone ?? this.invitedPhone,
       invitedTempPassword: invitedTempPassword ?? this.invitedTempPassword,
+      isAddingChild: isAddingChild ?? this.isAddingChild,
     );
   }
 }
@@ -342,6 +346,20 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
   void skipToFinal() => state = state.copyWith(currentStep: 11);
 
+  void startAddingChild() {
+    state = state.copyWith(
+      isAddingChild: true,
+      activeChild: ChildProfile(),
+      role: UserRole.parent,
+    );
+  }
+
+  void finishAddingChild() async {
+    saveActiveChild();
+    await completeOnboarding();
+    state = state.copyWith(isAddingChild: false);
+  }
+
   Future<void> completeOnboarding() async {
     final user = _authRepository.currentUser;
     if (user != null) {
@@ -368,6 +386,16 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         'helpPreferences': state.helpPreferences,
         'usesDigitalTools': state.usesDigitalTools,
         'sharesContent': state.sharesContent,
+        'children': state.children.map((c) => {
+          'fullName': c.fullName,
+          'gender': c.gender,
+          'birthDate': c.birthDate?.toIso8601String(),
+          'username': c.username,
+          'grade': c.grade,
+          'confidentSubjects': c.confidentSubjects,
+          'improvementSubjects': c.improvementSubjects,
+          'learningGoals': c.learningGoals,
+        }).toList(),
       };
       
       await _firestoreService.saveUserProfile(user.uid, userData);

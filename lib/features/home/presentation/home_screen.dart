@@ -166,7 +166,16 @@ class _ParentDashboard extends StatelessWidget {
             title: 'Add Another Child',
             icon: Icons.add_circle_outline,
             onTap: () {
-              // TODO: Navigate to add child flow
+              ref.read(onboardingProvider.notifier).startAddingChild();
+              context.push('/onboarding/child-secure');
+            },
+          ),
+          const SizedBox(height: AppConstants.space16),
+          _DashboardActionCard(
+            title: 'Secure Profiles',
+            icon: Icons.security_outlined,
+            onTap: () {
+              context.push('/parent/security');
             },
           ),
         ],
@@ -202,9 +211,7 @@ class _TeacherDashboard extends StatelessWidget {
             icon: Icons.group_outlined,
             color: Colors.purple,
             onTap: () {
-               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Class Management coming soon!')),
-              );
+               context.push('/teacher/classes');
             },
           ),
           const SizedBox(height: AppConstants.space16),
@@ -244,7 +251,9 @@ class _AdminDashboard extends StatelessWidget {
             subtitle: 'Invite and manage users',
             icon: Icons.manage_accounts_outlined,
             color: Colors.blueGrey,
-            onTap: () {},
+            onTap: () {
+              context.push('/admin/management');
+            },
           ),
           const SizedBox(height: AppConstants.space16),
           _DashboardCard(
@@ -252,7 +261,9 @@ class _AdminDashboard extends StatelessWidget {
             subtitle: 'Track app usage and performance',
             icon: Icons.analytics_outlined,
             color: Colors.indigo,
-            onTap: () {},
+            onTap: () {
+              context.push('/admin/analytics');
+            },
           ),
         ],
       ),
