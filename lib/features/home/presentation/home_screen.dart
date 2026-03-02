@@ -5,6 +5,8 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../onboarding/domain/onboarding_provider.dart';
+import '../../library/presentation/library_screen.dart';
+import '../../notifications/presentation/notifications_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -13,15 +15,16 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(onboardingProvider);
     final role = state.role;
+    final currentIndex = ref.watch(homeTabProvider);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: currentIndex == 0 ? AppBar(
         title: const Text('FEMA Dashboard'),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline),
             onPressed: () {
-              // TODO: Navigate to profile
+              context.push('/profile');
             },
           ),
           IconButton(
@@ -32,19 +35,26 @@ class HomeScreen extends ConsumerWidget {
             },
           ),
         ],
+      ) : null,
+      body: IndexedStack(
+        index: currentIndex,
+        children: [
+          _buildDashboardByRole(context, role, state),
+          const LibraryScreen(),
+          const NotificationsScreen(),
+        ],
       ),
-      body: _buildDashboardByRole(context, role, state),
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.menu_book_outlined), label: 'Library'),
           BottomNavigationBarItem(icon: Icon(Icons.notifications_none_outlined), label: 'Alerts'),
         ],
-        currentIndex: 0,
+        currentIndex: currentIndex,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.grey,
         onTap: (index) {
-          // TODO: Implement navigation
+          ref.read(homeTabProvider.notifier).state = index;
         },
       ),
     );
@@ -93,7 +103,9 @@ class _StudentDashboard extends StatelessWidget {
             subtitle: 'Continue where you left off',
             icon: Icons.play_lesson_outlined,
             color: Colors.blue,
-            onTap: () {},
+            onTap: () {
+              ref.read(homeTabProvider.notifier).state = 1; // Go to Library
+            },
           ),
           const SizedBox(height: AppConstants.space16),
           _DashboardCard(
@@ -101,7 +113,9 @@ class _StudentDashboard extends StatelessWidget {
             subtitle: 'Test your knowledge',
             icon: Icons.quiz_outlined,
             color: Colors.orange,
-            onTap: () {},
+            onTap: () {
+              context.push('/onboarding/quiz-intro');
+            },
           ),
           const SizedBox(height: AppConstants.space16),
           _DashboardCard(
@@ -187,7 +201,11 @@ class _TeacherDashboard extends StatelessWidget {
             subtitle: 'Manage your students',
             icon: Icons.group_outlined,
             color: Colors.purple,
-            onTap: () {},
+            onTap: () {
+               ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Class Management coming soon!')),
+              );
+            },
           ),
           const SizedBox(height: AppConstants.space16),
           _DashboardCard(
@@ -195,7 +213,9 @@ class _TeacherDashboard extends StatelessWidget {
             subtitle: 'Create and edit lessons',
             icon: Icons.library_books_outlined,
             color: Colors.teal,
-            onTap: () {},
+            onTap: () {
+              ref.read(homeTabProvider.notifier).state = 1; // Go to Library
+            },
           ),
         ],
       ),

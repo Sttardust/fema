@@ -380,3 +380,5 @@ final onboardingProvider = StateNotifierProvider<OnboardingNotifier, OnboardingS
   final authRepository = ref.watch(authRepositoryProvider);
   return OnboardingNotifier(firestoreService, authRepository);
 });
+
+final homeTabProvider = StateProvider<int>((ref) => 0);

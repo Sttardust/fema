@@ -24,6 +24,9 @@ import '../features/onboarding/presentation/teacher_onboarding_screens.dart';
 import '../features/onboarding/presentation/admin_onboarding_screens.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/onboarding/presentation/fema_intro_screen.dart';
+import '../features/library/presentation/library_screen.dart';
+import '../features/library/presentation/course_details_screen.dart';
+import '../features/profile/presentation/profile_screen.dart';
 
 // Placeholder screens for router setup
 class PlaceholderScreen extends StatelessWidget {
@@ -146,10 +149,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/onboarding/intro',
         builder: (context, state) => const FemaIntroScreen(),
       ),
-      // Home route placeholder
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/library',
+        builder: (context, state) => const LibraryScreen(),
+      ),
+      GoRoute(
+        path: '/library/course-details',
+        builder: (context, state) => const CourseDetailsScreen(),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
       ),
     ],
   );
