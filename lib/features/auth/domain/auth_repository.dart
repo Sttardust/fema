@@ -6,7 +6,12 @@ abstract class AuthRepository {
   User? get currentUser;
   Future<UserCredential> signUpWithEmail(String email, String password);
   Future<void> signOut();
-  // Add phone auth methods as needed
+  Future<void> verifyPhoneNumber({
+    required String phoneNumber,
+    required void Function(String verificationId, int? resendToken) codeSent,
+    required void Function(FirebaseAuthException e) verificationFailed,
+  });
+  Future<UserCredential> signInWithCredential(AuthCredential credential);
 }
 
 class FirebaseAuthRepository implements AuthRepository {
@@ -31,6 +36,28 @@ class FirebaseAuthRepository implements AuthRepository {
   @override
   Future<void> signOut() async {
     await _auth.signOut();
+  }
+
+  @override
+  Future<void> verifyPhoneNumber({
+    required String phoneNumber,
+    required void Function(String verificationId, int? resendToken) codeSent,
+    required void Function(FirebaseAuthException e) verificationFailed,
+  }) async {
+    await _auth.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        await _auth.signInWithCredential(credential);
+      },
+      verificationFailed: verificationFailed,
+      codeSent: codeSent,
+      codeAutoRetrievalTimeout: (String verificationId) {},
+    );
+  }
+
+  @override
+  Future<UserCredential> signInWithCredential(AuthCredential credential) async {
+    return await _auth.signInWithCredential(credential);
   }
 }
 

@@ -22,6 +22,7 @@ import '../features/onboarding/presentation/quiz_intro_screen.dart';
 import '../features/onboarding/presentation/quiz_screen.dart';
 import '../features/onboarding/presentation/teacher_onboarding_screens.dart';
 import '../features/onboarding/presentation/admin_onboarding_screens.dart';
+import '../features/home/presentation/home_screen.dart';
 import '../features/onboarding/presentation/fema_intro_screen.dart';
 
 // Placeholder screens for router setup
@@ -64,7 +65,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/otp',
-        builder: (context, state) => const OtpScreen(),
+        builder: (context, state) {
+          final verificationId = state.extra as String;
+          return OtpScreen(verificationId: verificationId);
+        },
       ),
       GoRoute(
         path: '/onboarding',
@@ -145,7 +149,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Home route placeholder
       GoRoute(
         path: '/home',
-        builder: (context, state) => const PlaceholderScreen(title: 'Home'),
+        builder: (context, state) => const HomeScreen(),
       ),
     ],
   );

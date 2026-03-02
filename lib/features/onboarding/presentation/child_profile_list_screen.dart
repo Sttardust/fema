@@ -101,7 +101,13 @@ class ChildProfileListScreen extends ConsumerWidget {
             const SizedBox(height: AppConstants.space32),
             AppButton(
               text: 'Continue',
-              onPressed: () => context.push('/onboarding/referral'),
+              onPressed: () {
+                if (onboardingState.role == UserRole.parent) {
+                  context.push('/onboarding/intro');
+                } else {
+                  context.push('/onboarding/referral');
+                }
+              },
             ),
             const SizedBox(height: AppConstants.space48),
           ],

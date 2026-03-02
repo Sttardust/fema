@@ -6,6 +6,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../domain/auth_repository.dart';
+import '../../onboarding/domain/onboarding_provider.dart';
 
 class PhoneSignupScreen extends ConsumerStatefulWidget {
   const PhoneSignupScreen({super.key});
@@ -17,9 +19,22 @@ class PhoneSignupScreen extends ConsumerStatefulWidget {
 class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
   final _phoneController = TextEditingController();
 
-  void _onVerify() {
+  void _onVerify() async {
+    final phoneNumber = '+251${_phoneController.text}';
     if (_phoneController.text.length >= 9) {
-      context.push('/otp');
+      await ref.read(authRepositoryProvider).verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        codeSent: (verificationId, resendToken) {
+          // Store phone in onboarding state for later use
+          ref.read(onboardingProvider.notifier).updatePersonalDetails(phone: _phoneController.text);
+          context.push('/otp', extra: verificationId);
+        },
+        verificationFailed: (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message ?? 'Verification failed')),
+          );
+        },
+      );
     }
   }
 
