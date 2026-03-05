@@ -74,7 +74,8 @@ class ChildProfileListScreen extends ConsumerWidget {
                         IconButton(
                           icon: const Icon(Icons.edit_outlined, color: AppColors.grey),
                           onPressed: () {
-                            // TODO: Implement edit logic
+                            ref.read(onboardingProvider.notifier).editChild(index);
+                            context.push('/onboarding/child-secure');
                           },
                         ),
                       ],
@@ -101,11 +102,10 @@ class ChildProfileListScreen extends ConsumerWidget {
             const SizedBox(height: AppConstants.space32),
             AppButton(
               text: 'Continue',
-              onPressed: () {
-                if (onboardingState.role == UserRole.parent) {
+              onPressed: () async {
+                await ref.read(onboardingProvider.notifier).completeOnboarding();
+                if (context.mounted) {
                   context.push('/onboarding/intro');
-                } else {
-                  context.push('/onboarding/referral');
                 }
               },
             ),

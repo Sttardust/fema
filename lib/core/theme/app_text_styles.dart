@@ -15,6 +15,12 @@ class AppTextStyles {
         color: AppColors.textHeadline,
       );
 
+  static TextStyle get headlineSmall => GoogleFonts.poppins(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textHeadline,
+      );
+
   static TextStyle get bodyLarge => GoogleFonts.poppins(
         fontSize: 16,
         fontWeight: FontWeight.normal,
@@ -23,6 +29,12 @@ class AppTextStyles {
 
   static TextStyle get bodyMedium => GoogleFonts.poppins(
         fontSize: 14,
+        fontWeight: FontWeight.normal,
+        color: AppColors.textBody,
+      );
+
+  static TextStyle get bodySmall => GoogleFonts.poppins(
+        fontSize: 12,
         fontWeight: FontWeight.normal,
         color: AppColors.textBody,
       );

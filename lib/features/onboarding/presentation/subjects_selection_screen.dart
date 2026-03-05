@@ -51,7 +51,8 @@ class _SubjectsSelectionScreenState extends ConsumerState<SubjectsSelectionScree
 
   void _onContinue() {
     final notifier = ref.read(onboardingProvider.notifier);
-    final isParent = ref.read(onboardingProvider).role == UserRole.parent;
+    // ignore: unused_local_variable
+
 
     if (widget.isConfident) {
       notifier.setConfidentSubjects(selectedSubjects);
@@ -81,8 +82,8 @@ class _SubjectsSelectionScreenState extends ConsumerState<SubjectsSelectionScree
 
     return Scaffold(
       appBar: OnboardingProgressHeader(
-        currentStep: isParent ? (widget.isConfident ? 5 : 6) : (widget.isConfident ? 3 : 4),
-        totalSteps: isParent ? 8 : 7,
+        currentStep: isParent ? (widget.isConfident ? 5 : 6) : (widget.isConfident ? 4 : 5),
+        totalSteps: isParent ? 8 : 8,
         onSkip: () => context.push('/onboarding/intro'),
       ),
       body: Padding(
@@ -137,7 +138,7 @@ class _SubjectsSelectionScreenState extends ConsumerState<SubjectsSelectionScree
                             });
                           },
                           backgroundColor: Colors.white,
-                          selectedColor: AppColors.primary.withOpacity(0.1),
+                          selectedColor: AppColors.primary.withValues(alpha: 0.1),
                           checkmarkColor: AppColors.primary,
                           labelStyle: AppTextStyles.bodyMedium.copyWith(
                             color: isSelected ? AppColors.primary : AppColors.textBody,

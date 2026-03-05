@@ -25,7 +25,7 @@ class ManagementPlaceholderScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 80, color: AppColors.primary.withOpacity(0.5)),
+              Icon(icon, size: 80, color: AppColors.primary.withValues(alpha: 0.5)),
               const SizedBox(height: AppConstants.space24),
               Text(
                 title,

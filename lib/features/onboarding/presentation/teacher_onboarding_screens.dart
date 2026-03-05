@@ -59,7 +59,7 @@ class _TeacherExperienceScreenState extends ConsumerState<TeacherExperienceScree
     return Scaffold(
       appBar: OnboardingProgressHeader(
         currentStep: 1,
-        totalSteps: 5, // Teacher flow has fewer steps
+        totalSteps: 3, 
         onSkip: () => context.push('/onboarding/intro'),
       ),
       body: SingleChildScrollView(
@@ -91,11 +91,14 @@ class _TeacherExperienceScreenState extends ConsumerState<TeacherExperienceScree
                     selected: isSelected,
                     onSelected: (selected) {
                       setState(() {
-                        if (selected) _selectedGrades.add(grade);
-                        else _selectedGrades.remove(grade);
+                        if (selected) {
+                          _selectedGrades.add(grade);
+                        } else {
+                          _selectedGrades.remove(grade);
+                        }
                       });
                     },
-                    selectedColor: AppColors.primary.withOpacity(0.2),
+                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
                     checkmarkColor: AppColors.primary,
                   );
                 }).toList(),
@@ -113,11 +116,14 @@ class _TeacherExperienceScreenState extends ConsumerState<TeacherExperienceScree
                     selected: isSelected,
                     onSelected: (selected) {
                       setState(() {
-                        if (selected) _selectedSubjects.add(subject);
-                        else _selectedSubjects.remove(subject);
+                        if (selected) {
+                          _selectedSubjects.add(subject);
+                        } else {
+                          _selectedSubjects.remove(subject);
+                        }
                       });
                     },
-                    selectedColor: AppColors.primary.withOpacity(0.2),
+                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
                     checkmarkColor: AppColors.primary,
                   );
                 }).toList(),
@@ -161,6 +167,7 @@ class _TeacherPersonalizationScreenState extends ConsumerState<TeacherPersonaliz
         usesDigitalTools: _usesDigitalTools,
         sharesContent: _sharesContent,
       );
+      ref.read(onboardingProvider.notifier).completeOnboarding();
       context.push('/onboarding/intro');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -173,8 +180,8 @@ class _TeacherPersonalizationScreenState extends ConsumerState<TeacherPersonaliz
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: OnboardingProgressHeader(
-        currentStep: 4,
-        totalSteps: 5,
+        currentStep: 3,
+        totalSteps: 3,
         onSkip: () => context.push('/onboarding/intro'),
       ),
       body: SingleChildScrollView(
@@ -269,7 +276,7 @@ class _SelectionOption extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
+            color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected ? AppColors.primary : AppColors.greyLight,

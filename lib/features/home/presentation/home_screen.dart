@@ -71,18 +71,17 @@ class HomeScreen extends ConsumerWidget {
       case UserRole.admin:
         return _AdminDashboard(state: state);
       case UserRole.none:
-      default:
         return const Center(child: Text('Welcome to FEMA! Please login or sign up.'));
     }
   }
 }
 
-class _StudentDashboard extends StatelessWidget {
+class _StudentDashboard extends ConsumerWidget {
   final OnboardingState state;
   const _StudentDashboard({required this.state});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.space24),
       child: Column(
@@ -131,12 +130,12 @@ class _StudentDashboard extends StatelessWidget {
   }
 }
 
-class _ParentDashboard extends StatelessWidget {
+class _ParentDashboard extends ConsumerWidget {
   final OnboardingState state;
   const _ParentDashboard({required this.state});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.space24),
       child: Column(
@@ -184,12 +183,12 @@ class _ParentDashboard extends StatelessWidget {
   }
 }
 
-class _TeacherDashboard extends StatelessWidget {
+class _TeacherDashboard extends ConsumerWidget {
   final OnboardingState state;
   const _TeacherDashboard({required this.state});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.space24),
       child: Column(
@@ -221,7 +220,7 @@ class _TeacherDashboard extends StatelessWidget {
             icon: Icons.library_books_outlined,
             color: Colors.teal,
             onTap: () {
-              ref.read(homeTabProvider.notifier).state = 1; // Go to Library
+              context.push('/teacher/editor');
             },
           ),
         ],
@@ -230,12 +229,12 @@ class _TeacherDashboard extends StatelessWidget {
   }
 }
 
-class _AdminDashboard extends StatelessWidget {
+class _AdminDashboard extends ConsumerWidget {
   final OnboardingState state;
   const _AdminDashboard({required this.state});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.space24),
       child: Column(
@@ -299,7 +298,7 @@ class _DashboardCard extends StatelessWidget {
           border: Border.all(color: AppColors.greyLight),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.05),
+              color: color.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -310,7 +309,7 @@ class _DashboardCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppConstants.space12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 28),
@@ -358,7 +357,7 @@ class _DashboardActionCard extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.all(AppConstants.space16),
         minimumSize: const Size(double.infinity, 80),
-        side: const BorderSide(color: AppColors.primary, style: BorderStyle.dashed),
+        side: const BorderSide(color: AppColors.primary),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.radius16),
         ),

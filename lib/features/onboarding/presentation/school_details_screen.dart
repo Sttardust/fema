@@ -40,8 +40,8 @@ class _SchoolDetailsScreenState extends ConsumerState<SchoolDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: OnboardingProgressHeader(
-        currentStep: 2,
-        totalSteps: 7,
+        currentStep: 3,
+        totalSteps: 8,
         onSkip: () => context.push('/onboarding/intro'),
       ),
       body: SingleChildScrollView(

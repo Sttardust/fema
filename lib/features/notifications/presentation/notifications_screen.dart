@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/constants/app_constants.dart';
 import '../domain/models.dart';
-
 import '../../auth/domain/auth_repository.dart';
 import '../../../core/services/firestore_service.dart';
-import '../domain/models.dart';
 
 // Stream Provider for Notifications
 final notificationsProvider = StreamProvider<List<AppNotification>>((ref) {
@@ -52,7 +51,7 @@ class NotificationsScreen extends ConsumerWidget {
         title: const Text('Notifications'),
         centerTitle: true,
       ),
-      body: notificationsAsync.when(
+      body: notifications.when(
         data: (notifications) => notifications.isEmpty
             ? _buildEmptyState()
             : ListView.separated(
@@ -159,7 +158,6 @@ class _NotificationTile extends StatelessWidget {
         color = Colors.amber;
         break;
       case NotificationType.update:
-      default:
         icon = Icons.info_outline;
         color = AppColors.primary;
     }

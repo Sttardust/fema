@@ -61,8 +61,8 @@ class _LearningGoalsScreenState extends ConsumerState<LearningGoalsScreen> {
 
     return Scaffold(
       appBar: OnboardingProgressHeader(
-        currentStep: isParent ? 7 : 5,
-        totalSteps: isParent ? 8 : 7,
+        currentStep: isParent ? 7 : 6,
+        totalSteps: isParent ? 8 : 8,
         onSkip: () => context.push('/onboarding/intro'),
       ),
       body: Padding(

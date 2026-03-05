@@ -59,11 +59,28 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingProvider);
     final isPhoneSignup = state.phone != null && state.email == null;
+    final role = state.role;
+
+    int currentStep = 1;
+    int totalSteps = 7;
+
+    if (role == UserRole.teacher) {
+      currentStep = 2;
+      totalSteps = 3;
+    } else if (role == UserRole.parent) {
+      // Parent details screen is separate, but just in case:
+      currentStep = 1;
+      totalSteps = 8;
+    } else {
+      // Student flow: Grade(1), Details(2), School(3), Confident(4), Improve(5), Goals(6), Referral(7), Quiz(8)
+      currentStep = 2;
+      totalSteps = 8;
+    }
 
     return Scaffold(
       appBar: OnboardingProgressHeader(
-        currentStep: 1,
-        totalSteps: 7,
+        currentStep: currentStep,
+        totalSteps: totalSteps,
         onSkip: () => context.push('/onboarding/intro'),
       ),
       body: SingleChildScrollView(

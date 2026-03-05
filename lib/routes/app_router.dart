@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/presentation/welcome_screen.dart';
 import '../features/auth/presentation/email_signup_screen.dart';
+import '../features/auth/presentation/email_login_screen.dart';
 import '../features/auth/presentation/phone_signup_screen.dart';
 import '../features/auth/presentation/otp_screen.dart';
 import '../features/onboarding/presentation/role_selection_screen.dart';
@@ -29,6 +30,8 @@ import '../features/library/presentation/course_details_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/home/presentation/management_placeholder_screen.dart';
 import '../features/parent/presentation/child_security_screen.dart';
+import '../features/teacher/presentation/class_management_screen.dart';
+import '../features/teacher/presentation/content_editor_screen.dart';
 
 // Placeholder screens for router setup
 class PlaceholderScreen extends StatelessWidget {
@@ -58,7 +61,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/login',
-        builder: (context, state) => const PlaceholderScreen(title: 'Login'),
+        builder: (context, state) => const EmailLoginScreen(),
       ),
       GoRoute(
         path: '/signup',
@@ -169,11 +172,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/teacher/classes',
-        builder: (context, state) => const ManagementPlaceholderScreen(
-          title: 'Class Management',
-          description: 'View and manage your student lists, attendance, and performance analytics.',
-          icon: Icons.group_outlined,
-        ),
+        builder: (context, state) => const ClassManagementScreen(),
+      ),
+      GoRoute(
+        path: '/teacher/editor',
+        builder: (context, state) => const ContentEditorScreen(),
       ),
       GoRoute(
         path: '/admin/management',

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -24,9 +25,17 @@ class ChildSecurityScreen extends ConsumerWidget {
               separatorBuilder: (_, __) => const SizedBox(height: 16),
               itemBuilder: (context, index) {
                 final child = children[index];
-                return _ChildSecurityCard(child: child);
+                return _ChildSecurityCard(child: child, index: index);
               },
             ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          ref.read(onboardingProvider.notifier).startAddingChild();
+          context.push('/onboarding/child-secure');
+        },
+        label: const Text('Add Another Child'),
+        icon: const Icon(Icons.add),
+      ),
     );
   }
 
@@ -47,13 +56,14 @@ class ChildSecurityScreen extends ConsumerWidget {
   }
 }
 
-class _ChildSecurityCard extends StatelessWidget {
+class _ChildSecurityCard extends ConsumerWidget {
   final ChildProfile child;
+  final int index;
 
-  const _ChildSecurityCard({required this.child});
+  const _ChildSecurityCard({required this.child, required this.index});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(AppConstants.space16),
       decoration: BoxDecoration(
@@ -61,7 +71,7 @@ class _ChildSecurityCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConstants.radius12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -73,7 +83,7 @@ class _ChildSecurityCard extends StatelessWidget {
           Row(
             children: [
               CircleAvatar(
-                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 child: Text(
                   child.fullName?.substring(0, 1) ?? 'C',
                   style: const TextStyle(color: AppColors.primary),
@@ -99,15 +109,50 @@ class _ChildSecurityCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {
-                // TODO: Implement credential update
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Credential editing coming soon!')),
-                );
-              },
+              onPressed: () => _showEditDialog(context, ref),
               icon: const Icon(Icons.edit_outlined, size: 18),
               label: const Text('Update Credentials'),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context, WidgetRef ref) {
+    final userController = TextEditingController(text: child.username);
+    final passController = TextEditingController(text: child.password);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Edit Credentials: ${child.fullName}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: userController,
+              decoration: const InputDecoration(labelText: 'Username'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passController,
+              decoration: const InputDecoration(labelText: 'Password'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              await ref.read(onboardingProvider.notifier).updateChildCredentials(
+                index,
+                userController.text,
+                passController.text,
+              );
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('Save'),
           ),
         ],
       ),

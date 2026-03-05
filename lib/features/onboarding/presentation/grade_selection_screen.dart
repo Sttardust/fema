@@ -72,8 +72,8 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
 
     return Scaffold(
       appBar: OnboardingProgressHeader(
-        currentStep: isParent ? 4 : 2,
-        totalSteps: isParent ? 8 : 7,
+        currentStep: isParent ? 4 : 1,
+        totalSteps: isParent ? 8 : 8,
         showSkip: !isParent,
       ),
       body: Padding(

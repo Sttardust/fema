@@ -5,6 +5,7 @@ abstract class AuthRepository {
   Stream<User?> get authStateChanges;
   User? get currentUser;
   Future<UserCredential> signUpWithEmail(String email, String password);
+  Future<UserCredential> signInWithEmail(String email, String password);
   Future<void> signOut();
   Future<void> verifyPhoneNumber({
     required String phoneNumber,
@@ -28,6 +29,14 @@ class FirebaseAuthRepository implements AuthRepository {
   @override
   Future<UserCredential> signUpWithEmail(String email, String password) async {
     return await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+  }
+
+  @override
+  Future<UserCredential> signInWithEmail(String email, String password) async {
+    return await _auth.signInWithEmailAndPassword(
       email: email,
       password: password,
     );

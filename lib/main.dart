@@ -4,20 +4,34 @@ import 'package:firebase_core/firebase_core.dart';
 import 'routes/app_router.dart';
 import 'core/theme/app_colors.dart';
 
+bool _firebaseInitialized = false;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  await Firebase.initializeApp(); // Assumes platforms are configured or web-only for now
-  
+
+  // Safely initialize Firebase — requires google-services.json in android/app/
+  // If missing, the app will still launch but Firebase features will be unavailable.
+  try {
+    await Firebase.initializeApp();
+    _firebaseInitialized = true;
+  } catch (e) {
+    debugPrint(
+      '[FEMA] Firebase initialization failed: $e\n'
+      'Ensure google-services.json is placed in android/app/ and '
+      'GoogleService-Info.plist is placed in ios/Runner/.',
+    );
+  }
+
   runApp(
-    const ProviderScope(
-      child: FemaApp(),
+    ProviderScope(
+      child: FemaApp(firebaseReady: _firebaseInitialized),
     ),
   );
 }
 
 class FemaApp extends ConsumerWidget {
-  const FemaApp({super.key});
+  final bool firebaseReady;
+  const FemaApp({super.key, this.firebaseReady = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,6 +50,7 @@ class FemaApp extends ConsumerWidget {
         ),
         scaffoldBackgroundColor: AppColors.background,
       ),
+      builder: (context, child) => child!,
     );
   }
 }

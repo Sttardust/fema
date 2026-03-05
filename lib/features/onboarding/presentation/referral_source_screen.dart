@@ -58,8 +58,8 @@ class _ReferralSourceScreenState extends ConsumerState<ReferralSourceScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: OnboardingProgressHeader(
-        currentStep: 6,
-        totalSteps: 7,
+        currentStep: 7,
+        totalSteps: 8,
         onSkip: () => context.push('/onboarding/intro'),
       ),
       body: Padding(
@@ -84,7 +84,14 @@ class _ReferralSourceScreenState extends ConsumerState<ReferralSourceScreen> {
                   return Column(
                     children: [
                       ListTile(
-                        onTap: () => setState(() => selectedSource = source),
+                        tileColor: Colors.white,
+                        selectedTileColor: AppColors.primary.withValues(alpha: 0.05),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppConstants.radius12),
+                          side: BorderSide(
+                            color: isSelected ? AppColors.primary : AppColors.greyLight,
+                          ),
+                        ),
                         title: Text(source, style: AppTextStyles.bodyLarge),
                         leading: Radio<String>(
                           value: source,
@@ -92,13 +99,6 @@ class _ReferralSourceScreenState extends ConsumerState<ReferralSourceScreen> {
                           onChanged: (val) => setState(() => selectedSource = val),
                           activeColor: AppColors.primary,
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppConstants.radius12),
-                          side: BorderSide(
-                            color: isSelected ? AppColors.primary : AppColors.greyLight,
-                          ),
-                        ),
-                        tileColor: Colors.white,
                       ),
                       if (isSelected && source == 'Other') ...[
                         const SizedBox(height: AppConstants.space12),

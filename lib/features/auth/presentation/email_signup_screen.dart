@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../onboarding/domain/onboarding_provider.dart';
+import '../domain/auth_repository.dart';
 
 class EmailSignupScreen extends ConsumerStatefulWidget {
   const EmailSignupScreen({super.key});
@@ -21,13 +21,28 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  void _onSignUp() {
+  Future<void> _onSignUp() async {
     if (_formKey.currentState!.validate()) {
-      // TODO: Firebase Sign Up Logic
-      ref.read(onboardingProvider.notifier).updatePersonalDetails(
-        email: _emailController.text,
-      );
-      context.push('/onboarding/details'); // Move to Step 4
+      try {
+        await ref.read(authRepositoryProvider).signUpWithEmail(
+          _emailController.text,
+          _passwordController.text,
+        );
+        
+        ref.read(onboardingProvider.notifier).updatePersonalDetails(
+          email: _emailController.text,
+        );
+        
+        if (mounted) {
+          context.push('/onboarding/details'); 
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Sign up failed: ${e.toString()}')),
+          );
+        }
+      }
     }
   }
 
@@ -114,6 +129,23 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
                   padding: const EdgeInsets.all(16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
+              ),
+              const SizedBox(height: AppConstants.space24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                   Text("Already have an account? ", style: AppTextStyles.bodyMedium),
+                  TextButton(
+                    onPressed: () => context.push('/login'),
+                    child: Text(
+                      'Log In',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

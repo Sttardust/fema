@@ -129,9 +129,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         actions: [
           AppButton(
             text: 'Finish',
-            onPressed: () {
-              Navigator.pop(context);
-              context.push('/onboarding/intro');
+            onPressed: () async {
+              await ref.read(onboardingProvider.notifier).completeOnboarding();
+              if (context.mounted) {
+                Navigator.pop(context);
+                context.push('/onboarding/intro');
+              }
             },
           ),
         ],
@@ -145,8 +148,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
     return Scaffold(
       appBar: OnboardingProgressHeader(
-        currentStep: 7, // Fixed step for placement test phase
-        totalSteps: 7,
+        currentStep: 8, 
+        totalSteps: 8,
         showSkip: true,
       ),
       body: Padding(
@@ -181,7 +184,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(AppConstants.space16),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
+                        color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : Colors.white,
                         borderRadius: BorderRadius.circular(AppConstants.radius12),
                         border: Border.all(
                           color: isSelected ? AppColors.primary : AppColors.greyLight,

@@ -236,10 +236,23 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
   void saveActiveChild() {
     if (state.activeChild != null) {
-      state = state.copyWith(
-        children: [...state.children, state.activeChild!],
-        activeChild: null,
-      );
+      final existingIndex = state.children.indexWhere((c) => c.username == state.activeChild!.username && c.username != null);
+      if (existingIndex != -1) {
+        final updatedChildren = List<ChildProfile>.from(state.children);
+        updatedChildren[existingIndex] = state.activeChild!;
+        state = state.copyWith(children: updatedChildren, activeChild: null);
+      } else {
+        state = state.copyWith(
+          children: [...state.children, state.activeChild!],
+          activeChild: null,
+        );
+      }
+    }
+  }
+
+  void editChild(int index) {
+    if (index >= 0 && index < state.children.length) {
+      state = state.copyWith(activeChild: state.children[index]);
     }
   }
 
@@ -351,6 +364,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       isAddingChild: true,
       activeChild: ChildProfile(),
       role: UserRole.parent,
+      currentStep: 2, // Start at Secure Profile step for new child
     );
   }
 
@@ -358,6 +372,23 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     saveActiveChild();
     await completeOnboarding();
     state = state.copyWith(isAddingChild: false);
+  }
+
+  Future<void> updateChildCredentials(int index, String username, String password) async {
+    if (index < state.children.length) {
+      final updatedChildren = List<ChildProfile>.from(state.children);
+      updatedChildren[index] = updatedChildren[index].copyWith(
+        username: username,
+        password: password,
+      );
+      
+      state = state.copyWith(children: updatedChildren);
+      
+      final user = _authRepository.currentUser;
+      if (user != null) {
+        await _firestoreService.updateChildCredentials(user.uid, index, username, password);
+      }
+    }
   }
 
   Future<void> completeOnboarding() async {
