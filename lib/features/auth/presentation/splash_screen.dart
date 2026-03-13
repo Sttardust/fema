@@ -21,7 +21,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // Simulate app initialization / auth check
     await Future.delayed(const Duration(seconds: 2));
     if (mounted) {
-      context.go('/welcome');
+      context.go('/onboarding/language');
     }
   }
 

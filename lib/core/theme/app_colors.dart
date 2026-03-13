@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Primary colors
-  static const Color primary = Color(0xFF5B2BE0);
-  static const Color primaryLight = Color(0xFF8E6AFF);
-  static const Color primaryDark = Color(0xFF3F1DAC);
+  // Primary colors (aligned with Figma High-Fi V1)
+  static const Color primary = Color(0xFF673AB7);
+  static const Color primaryLight = Color(0xFF9575CD);
+  static const Color primaryDark = Color(0xFF4527A0);
 
   // Secondary/Accent colors
   static const Color secondary = Color(0xFFFF7A59); // Salmon used in quiz

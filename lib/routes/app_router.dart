@@ -7,6 +7,7 @@ import '../features/auth/presentation/welcome_screen.dart';
 import '../features/auth/presentation/email_signup_screen.dart';
 import '../features/auth/presentation/email_login_screen.dart';
 import '../features/auth/presentation/phone_signup_screen.dart';
+import '../features/auth/presentation/phone_login_screen.dart';
 import '../features/auth/presentation/otp_screen.dart';
 import '../features/onboarding/presentation/role_selection_screen.dart';
 import '../features/onboarding/presentation/parent_details_screen.dart';
@@ -23,15 +24,20 @@ import '../features/onboarding/presentation/quiz_intro_screen.dart';
 import '../features/onboarding/presentation/quiz_screen.dart';
 import '../features/onboarding/presentation/teacher_onboarding_screens.dart';
 import '../features/onboarding/presentation/admin_onboarding_screens.dart';
+import '../features/onboarding/presentation/language_selection_screen.dart';
 import '../features/home/presentation/home_screen.dart';
+import '../features/home/presentation/search_screen.dart';
 import '../features/onboarding/presentation/fema_intro_screen.dart';
+import '../features/onboarding/presentation/teacher_onboarding_screens.dart';
 import '../features/library/presentation/library_screen.dart';
 import '../features/library/presentation/course_details_screen.dart';
+import '../features/library/presentation/video_player_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/home/presentation/management_placeholder_screen.dart';
 import '../features/parent/presentation/child_security_screen.dart';
 import '../features/teacher/presentation/class_management_screen.dart';
 import '../features/teacher/presentation/content_editor_screen.dart';
+import '../features/teacher/presentation/teacher_home_screen.dart';
 
 // Placeholder screens for router setup
 class PlaceholderScreen extends StatelessWidget {
@@ -70,6 +76,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/signup-phone',
         builder: (context, state) => const PhoneSignupScreen(),
+      ),
+      GoRoute(
+        path: '/login-phone',
+        builder: (context, state) => const PhoneLoginScreen(),
       ),
       GoRoute(
         path: '/otp',
@@ -151,12 +161,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const QuizScreen(),
       ),
       GoRoute(
+        path: '/onboarding/language',
+        builder: (context, state) => const LanguageSelectionScreen(),
+      ),
+      GoRoute(
         path: '/onboarding/intro',
         builder: (context, state) => const FemaIntroScreen(),
       ),
       GoRoute(
+        path: '/onboarding/teacher-intro',
+        builder: (context, state) => const TeacherIntroCarouselScreen(),
+      ),
+      GoRoute(
         path: '/home',
         builder: (context, state) => const HomeScreen(),
+        routes: [
+          GoRoute(
+            path: 'search',
+            builder: (context, state) => const SearchScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: '/library',
@@ -167,8 +191,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const CourseDetailsScreen(),
       ),
       GoRoute(
+        path: '/library/video-player',
+        builder: (context, state) => const VideoPlayerScreen(),
+      ),
+      GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/teacher/home',
+        builder: (context, state) => const TeacherHomeScreen(),
       ),
       GoRoute(
         path: '/teacher/classes',

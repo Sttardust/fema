@@ -49,7 +49,13 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Log In')),
+      appBar: AppBar(
+        title: const Text('Log In'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/welcome'),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppConstants.space24),
         child: Form(
@@ -136,7 +142,7 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
               ),
               const SizedBox(height: AppConstants.space24),
               OutlinedButton.icon(
-                onPressed: () => context.push('/signup-phone'),
+                onPressed: () => context.push('/login-phone'),
                 icon: const Icon(Icons.phone_outlined),
                 label: const Text('Log in with Phone Number'),
                 style: OutlinedButton.styleFrom(

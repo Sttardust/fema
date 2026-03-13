@@ -41,7 +41,13 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign Up')),
+      appBar: AppBar(
+        title: const Text('Sign Up'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/welcome'),
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(AppConstants.space24),
         child: Column(
@@ -87,6 +93,17 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
             AppButton(
               text: 'Send Code',
               onPressed: _onVerify,
+            ),
+            const SizedBox(height: AppConstants.space24),
+            TextButton(
+              onPressed: () => context.pushReplacement('/signup'),
+              child: Text(
+                'Switch to Email Sign Up',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
             ),
             const SizedBox(height: AppConstants.space32),
           ],

@@ -16,26 +16,23 @@ class GradeSelectionScreen extends ConsumerStatefulWidget {
 }
 
 class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
-  String? selectedGrade;
-  final List<String> grades = [
-    'KG', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4',
-    'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8',
-    'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'
-  ];
+  String? _selectedGrade;
+  final List<String> _primaryGrades = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'];
+  final List<String> _secondaryGrades = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
 
   void _onContinue() {
-    if (selectedGrade == null) return;
+    if (_selectedGrade == null) return;
 
-    ref.read(onboardingProvider.notifier).setGrade(selectedGrade!);
-    
     final onboardingState = ref.read(onboardingProvider);
     if (onboardingState.role == UserRole.parent) {
+      ref.read(onboardingProvider.notifier).setGrade(_selectedGrade!);
       context.push('/onboarding/subjects-confident');
     } else {
-      final gradeIdx = grades.indexOf(selectedGrade!);
-      if (gradeIdx <= 4) { // KG to Grade 4
+      // Logic for parental assistance for lower grades (customizable threshold)
+      if (_selectedGrade == 'Grade 1' || _selectedGrade == 'Grade 2' || _selectedGrade == 'Grade 3') {
         _showParentalModal();
       } else {
+        ref.read(onboardingProvider.notifier).setGrade(_selectedGrade!);
         context.push('/onboarding/details');
       }
     }
@@ -44,21 +41,28 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
   void _showParentalModal() {
     showDialog(
       context: context,
-      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radius16)),
-        title: const Text('Parental Assistance Needed'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Parental Assistance', style: TextStyle(fontWeight: FontWeight.bold)),
         content: const Text(
-          'It looks like you are in a lower grade. Please ask your parent or guardian to help you with the next steps of the setup.'
+          'For foundation years, we recommend completing the setup with a parent or guardian to ensure the best experience.'
         ),
         actions: [
-          AppButton(
-            text: 'I Understand',
-            height: 48,
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Change Grade'),
+          ),
+          ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              context.push('/login');
+              context.go('/welcome');
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('I Understand'),
           ),
         ],
       ),
@@ -71,56 +75,109 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
     final isParent = onboardingState.role == UserRole.parent;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: OnboardingProgressHeader(
         currentStep: isParent ? 4 : 1,
-        totalSteps: isParent ? 8 : 8,
+        totalSteps: 8,
         showSkip: !isParent,
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24),
-        child: Column(
-          children: [
-            const SizedBox(height: AppConstants.space24),
-            Text(
-              isParent ? "What grade is your child in?" : "What grade are you in?",
-              style: AppTextStyles.headlineLarge,
-              textAlign: TextAlign.center,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              Text(
+                isParent ? "What grade is your child in?" : "What grade are you in?",
+                style: AppTextStyles.headlineMedium.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Select your current grade to get personalized learning content.",
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey),
+              ),
+              const SizedBox(height: 32),
+              
+              _buildSectionTitle('Primary Education'),
+              const SizedBox(height: 12),
+              _buildGradeGrid(_primaryGrades),
+              
+              const SizedBox(height: 32),
+              _buildSectionTitle('Secondary Education'),
+              const SizedBox(height: 12),
+              _buildGradeGrid(_secondaryGrades),
+              
+              const SizedBox(height: 40),
+              AppButton(
+                text: 'Continue',
+                onPressed: _selectedGrade != null ? _onContinue : null,
+              ),
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title.toUpperCase(),
+      style: AppTextStyles.caption.copyWith(
+        color: AppColors.grey,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+
+  Widget _buildGradeGrid(List<String> grades) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 2.2,
+      ),
+      itemCount: grades.length,
+      itemBuilder: (context, index) {
+        final grade = grades[index];
+        final isSelected = _selectedGrade == grade;
+        return InkWell(
+          onTap: () => setState(() => _selectedGrade = grade),
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primary : AppColors.background,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected ? AppColors.primary : AppColors.greyLight,
+                width: 1.5,
+              ),
+              boxShadow: isSelected ? [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                )
+              ] : null,
             ),
-            const SizedBox(height: AppConstants.space16),
-            Text(
-              isParent
-                  ? "This helps us customize the learning experience based on your child's level and make sure they get the right support."
-                  : "This helps us tailor the content to your specific level.",
-              style: AppTextStyles.bodyLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppConstants.space40),
-            DropdownButtonFormField<String>(
-              value: selectedGrade,
-              hint: isParent ? const Text('Grade') : const Text('Select your grade'),
-              items: grades.map((grade) {
-                return DropdownMenuItem(value: grade, child: Text(grade));
-              }).toList(),
-              onChanged: (val) => setState(() => selectedGrade = val),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.radius12),
-                  borderSide: const BorderSide(color: AppColors.greyLight),
+            child: Center(
+              child: Text(
+                grade,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: isSelected ? Colors.white : AppColors.textHeadline,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 13,
                 ),
               ),
             ),
-            const Spacer(),
-            AppButton(
-              text: 'Continue',
-              onPressed: selectedGrade != null ? _onContinue : null,
-            ),
-            const SizedBox(height: AppConstants.space32),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

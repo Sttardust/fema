@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -21,24 +20,41 @@ class OnboardingProgressHeader extends StatelessWidget implements PreferredSizeW
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      leading: const BackButton(),
-      title: SizedBox(
-        width: 150,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: LinearProgressIndicator(
-            value: currentStep / totalSteps,
-            backgroundColor: AppColors.greyLight,
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-            minHeight: 8,
+      backgroundColor: Colors.white,
+      elevation: 0,
+      leading: const BackButton(color: AppColors.textHeadline),
+      title: Column(
+        children: [
+          Text(
+            'Step $currentStep of $totalSteps',
+            style: AppTextStyles.caption.copyWith(color: AppColors.grey, fontWeight: FontWeight.w600),
           ),
-        ),
+          const SizedBox(height: 8),
+          Container(
+            width: 120,
+            height: 6,
+            decoration: BoxDecoration(
+              color: AppColors.greyLight,
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: currentStep / totalSteps,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       centerTitle: true,
       actions: [
         if (showSkip)
           TextButton(
-            onPressed: onSkip ?? () => context.push('/onboarding/intro'),
+            onPressed: onSkip,
             child: Text(
               'Skip',
               style: AppTextStyles.bodyMedium.copyWith(
@@ -47,11 +63,11 @@ class OnboardingProgressHeader extends StatelessWidget implements PreferredSizeW
               ),
             ),
           ),
-        const SizedBox(width: AppConstants.space8),
+        const SizedBox(width: 8),
       ],
     );
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 10);
 }

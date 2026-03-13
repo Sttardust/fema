@@ -6,282 +6,94 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../onboarding/domain/onboarding_provider.dart';
 import '../../library/presentation/library_screen.dart';
+import '../../library/domain/library_provider.dart';
+import '../../library/domain/models.dart';
 import '../../notifications/presentation/notifications_screen.dart';
+import '../../profile/presentation/profile_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(onboardingProvider);
-    final role = state.role;
     final currentIndex = ref.watch(homeTabProvider);
 
     return Scaffold(
-      appBar: currentIndex == 0 ? AppBar(
-        title: const Text('FEMA Dashboard'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () {
-              context.push('/profile');
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              // Temporary logout/restart for testing
-              context.go('/');
-            },
-          ),
-        ],
-      ) : null,
       body: IndexedStack(
         index: currentIndex,
         children: [
-          _buildDashboardByRole(context, role, state),
+          const _StudentHomePage(),
           const LibraryScreen(),
           const NotificationsScreen(),
+          const ProfileScreen(),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book_outlined), label: 'Library'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications_none_outlined), label: 'Alerts'),
-        ],
-        currentIndex: currentIndex,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.grey,
-        onTap: (index) {
-          ref.read(homeTabProvider.notifier).state = index;
-        },
-      ),
-    );
-  }
-
-  Widget _buildDashboardByRole(BuildContext context, UserRole role, OnboardingState state) {
-    switch (role) {
-      case UserRole.student:
-        return _StudentDashboard(state: state);
-      case UserRole.parent:
-        return _ParentDashboard(state: state);
-      case UserRole.teacher:
-        return _TeacherDashboard(state: state);
-      case UserRole.admin:
-        return _AdminDashboard(state: state);
-      case UserRole.none:
-        return const Center(child: Text('Welcome to FEMA! Please login or sign up.'));
-    }
-  }
-}
-
-class _StudentDashboard extends ConsumerWidget {
-  final OnboardingState state;
-  const _StudentDashboard({required this.state});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.space24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Hello, ${state.firstName ?? 'Student'}! 👋',
-            style: AppTextStyles.headlineMedium,
-          ),
-          const SizedBox(height: AppConstants.space8),
-          Text(
-            'Ready to continue your learning journey?',
-            style: AppTextStyles.bodyMedium,
-          ),
-          const SizedBox(height: AppConstants.space32),
-          _DashboardCard(
-            title: 'Daily Lessons',
-            subtitle: 'Continue where you left off',
-            icon: Icons.play_lesson_outlined,
-            color: Colors.blue,
-            onTap: () {
-              ref.read(homeTabProvider.notifier).state = 1; // Go to Library
-            },
-          ),
-          const SizedBox(height: AppConstants.space16),
-          _DashboardCard(
-            title: 'Practice Quiz',
-            subtitle: 'Test your knowledge',
-            icon: Icons.quiz_outlined,
-            color: Colors.orange,
-            onTap: () {
-              context.push('/onboarding/quiz-intro');
-            },
-          ),
-          const SizedBox(height: AppConstants.space16),
-          _DashboardCard(
-            title: 'My Progress',
-            subtitle: 'View your achievements',
-            icon: Icons.trending_up,
-            color: Colors.green,
-            onTap: () {},
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ParentDashboard extends ConsumerWidget {
-  final OnboardingState state;
-  const _ParentDashboard({required this.state});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.space24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Parent Dashboard',
-            style: AppTextStyles.headlineMedium,
-          ),
-          const SizedBox(height: AppConstants.space8),
-          Text(
-            'Monitoring ${state.children.length} children',
-            style: AppTextStyles.bodyMedium,
-          ),
-          const SizedBox(height: AppConstants.space32),
-          ...state.children.map((child) => Padding(
-                padding: const EdgeInsets.only(bottom: AppConstants.space16),
-                child: _DashboardCard(
-                  title: child.fullName ?? 'Child',
-                  subtitle: 'Grade: ${child.grade}',
-                  icon: Icons.child_care,
-                  color: AppColors.primary,
-                  onTap: () {},
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _NavBarItem(
+                  icon: Icons.home_outlined,
+                  activeIcon: Icons.home,
+                  label: 'Home',
+                  isActive: currentIndex == 0,
+                  onTap: () => ref.read(homeTabProvider.notifier).state = 0,
                 ),
-              )),
-          _DashboardActionCard(
-            title: 'Add Another Child',
-            icon: Icons.add_circle_outline,
-            onTap: () {
-              ref.read(onboardingProvider.notifier).startAddingChild();
-              context.push('/onboarding/child-secure');
-            },
+                _NavBarItem(
+                  icon: Icons.laptop_mac_outlined,
+                  activeIcon: Icons.laptop_mac,
+                  label: 'My Courses',
+                  isActive: currentIndex == 1,
+                  onTap: () => ref.read(homeTabProvider.notifier).state = 1,
+                ),
+                _NavBarItem(
+                  icon: Icons.notifications_none_outlined,
+                  activeIcon: Icons.notifications,
+                  label: 'Notification',
+                  isActive: currentIndex == 2,
+                  onTap: () => ref.read(homeTabProvider.notifier).state = 2,
+                ),
+                _NavBarItem(
+                  icon: Icons.person_outline,
+                  activeIcon: Icons.person,
+                  label: 'Profile',
+                  isActive: currentIndex == 3,
+                  onTap: () => ref.read(homeTabProvider.notifier).state = 3,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: AppConstants.space16),
-          _DashboardActionCard(
-            title: 'Secure Profiles',
-            icon: Icons.security_outlined,
-            onTap: () {
-              context.push('/parent/security');
-            },
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _TeacherDashboard extends ConsumerWidget {
-  final OnboardingState state;
-  const _TeacherDashboard({required this.state});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.space24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Teacher Dashboard',
-            style: AppTextStyles.headlineMedium,
-          ),
-          const SizedBox(height: AppConstants.space8),
-          Text(
-            'Managing ${state.teachingGrades.join(', ')}',
-            style: AppTextStyles.bodyMedium,
-          ),
-          const SizedBox(height: AppConstants.space32),
-          _DashboardCard(
-            title: 'My Classes',
-            subtitle: 'Manage your students',
-            icon: Icons.group_outlined,
-            color: Colors.purple,
-            onTap: () {
-               context.push('/teacher/classes');
-            },
-          ),
-          const SizedBox(height: AppConstants.space16),
-          _DashboardCard(
-            title: 'Course Content',
-            subtitle: 'Create and edit lessons',
-            icon: Icons.library_books_outlined,
-            color: Colors.teal,
-            onTap: () {
-              context.push('/teacher/editor');
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AdminDashboard extends ConsumerWidget {
-  final OnboardingState state;
-  const _AdminDashboard({required this.state});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.space24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Admin Console',
-            style: AppTextStyles.headlineMedium,
-          ),
-          const SizedBox(height: AppConstants.space32),
-          _DashboardCard(
-            title: 'User Management',
-            subtitle: 'Invite and manage users',
-            icon: Icons.manage_accounts_outlined,
-            color: Colors.blueGrey,
-            onTap: () {
-              context.push('/admin/management');
-            },
-          ),
-          const SizedBox(height: AppConstants.space16),
-          _DashboardCard(
-            title: 'System Analytics',
-            subtitle: 'Track app usage and performance',
-            icon: Icons.analytics_outlined,
-            color: Colors.indigo,
-            onTap: () {
-              context.push('/admin/analytics');
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DashboardCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
+class _NavBarItem extends StatelessWidget {
   final IconData icon;
-  final Color color;
+  final IconData activeIcon;
+  final String label;
+  final bool isActive;
   final VoidCallback onTap;
 
-  const _DashboardCard({
-    required this.title,
-    required this.subtitle,
+  const _NavBarItem({
     required this.icon,
-    required this.color,
+    required this.activeIcon,
+    required this.label,
+    required this.isActive,
     required this.onTap,
   });
 
@@ -289,49 +101,26 @@ class _DashboardCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppConstants.radius16),
-      child: Container(
-        padding: const EdgeInsets.all(AppConstants.space20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppConstants.radius16),
-          border: Border.all(color: AppColors.greyLight),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(AppConstants.space12),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 28),
+            Icon(
+              isActive ? activeIcon : icon,
+              color: isActive ? AppColors.primary : AppColors.grey,
+              size: 24,
             ),
-            const SizedBox(width: AppConstants.space20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                   Text(
-                    title,
-                    style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: AppTextStyles.caption.copyWith(color: AppColors.grey),
-                  ),
-                ],
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                color: isActive ? AppColors.primary : AppColors.grey,
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.grey),
           ],
         ),
       ),
@@ -339,35 +128,408 @@ class _DashboardCard extends StatelessWidget {
   }
 }
 
-class _DashboardActionCard extends StatelessWidget {
-  final String title;
-  final IconData icon;
+class _StudentHomePage extends ConsumerWidget {
+  const _StudentHomePage();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(onboardingProvider);
+    final coursesAsync = ref.watch(coursesProvider);
+
+    return SafeArea(
+      child: CustomScrollView(
+        slivers: [
+          // Top bar with greeting and language
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Row(
+                children: [
+                  // Logo
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.diamond, color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Fema',
+                    style: AppTextStyles.headlineSmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.greyLight),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.language, size: 16, color: AppColors.grey),
+                        const SizedBox(width: 4),
+                        Text(
+                          'English',
+                          style: AppTextStyles.caption,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Search bar
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: GestureDetector(
+                onTap: () => context.push('/home/search'),
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.greyLight),
+                  ),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 14),
+                      const Icon(Icons.search, color: AppColors.grey, size: 22),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Search for courses...',
+                        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Recommended Courses section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recommended courses',
+                    style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  GestureDetector(
+                    onTap: () => ref.read(homeTabProvider.notifier).state = 1,
+                    child: Text(
+                      'View all',
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Recommended Courses Carousel
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 220,
+              child: coursesAsync.when(
+                data: (courses) {
+                  if (courses.isEmpty) {
+                    return _buildPlaceholderCards();
+                  }
+                  return ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: courses.length,
+                    itemBuilder: (context, index) => _CourseCard(
+                      course: courses[index],
+                      onTap: () {
+                        ref.read(selectedCourseProvider.notifier).state = courses[index];
+                        context.push('/library/course-details');
+                      },
+                    ),
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (_, __) => _buildPlaceholderCards(),
+              ),
+            ),
+          ),
+
+          // New section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'New',
+                    style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  GestureDetector(
+                    onTap: () => ref.read(homeTabProvider.notifier).state = 1,
+                    child: Text(
+                      'View all',
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // New Courses Horizontal List
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 220,
+              child: coursesAsync.when(
+                data: (courses) {
+                  if (courses.isEmpty) {
+                    return _buildPlaceholderCards();
+                  }
+                  // Show reversed list as "new" for demo
+                  final newCourses = courses.reversed.toList();
+                  return ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: newCourses.length,
+                    itemBuilder: (context, index) => _CourseCard(
+                      course: newCourses[index],
+                      onTap: () {
+                        ref.read(selectedCourseProvider.notifier).state = newCourses[index];
+                        context.push('/library/course-details');
+                      },
+                    ),
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (_, __) => _buildPlaceholderCards(),
+              ),
+            ),
+          ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderCards() {
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: 3,
+      itemBuilder: (context, index) => const _PlaceholderCourseCard(),
+    );
+  }
+}
+
+class _CourseCard extends StatelessWidget {
+  final Course course;
   final VoidCallback onTap;
 
-  const _DashboardActionCard({
-    required this.title,
-    required this.icon,
-    required this.onTap,
-  });
+  const _CourseCard({required this.course, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: onTap,
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.all(AppConstants.space16),
-        minimumSize: const Size(double.infinity, 80),
-        side: const BorderSide(color: AppColors.primary),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConstants.radius16),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 200,
+        margin: const EdgeInsets.only(right: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.greyLight.withOpacity(0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Thumbnail
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              child: Container(
+                height: 120,
+                width: double.infinity,
+                color: AppColors.primaryDark,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      course.thumbnailUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: AppColors.primaryDark,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                course.grade.toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.amber,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                course.subject.name.toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Play button overlay
+                    Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Info
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Top Educators',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    "Get guidance from Ethiopia's best teachers.",
+                    style: AppTextStyles.caption.copyWith(fontSize: 11),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+    );
+  }
+}
+
+class _PlaceholderCourseCard extends StatelessWidget {
+  const _PlaceholderCourseCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 200,
+      margin: const EdgeInsets.only(right: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.greyLight.withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.primary),
-          const SizedBox(width: AppConstants.space12),
-          Text(title, style: AppTextStyles.bodyLarge.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
+          // Thumbnail placeholder
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            child: Container(
+              height: 120,
+              width: double.infinity,
+              color: AppColors.primaryDark,
+              child: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'ONLINE COURSE',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Icon(Icons.play_circle_outline, color: Colors.white54, size: 28),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Info placeholder
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Top Educators',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  "Get guidance from Ethiopia's best teachers.",
+                  style: AppTextStyles.caption.copyWith(fontSize: 11),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

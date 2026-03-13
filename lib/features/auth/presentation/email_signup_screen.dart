@@ -49,7 +49,13 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign Up')),
+      appBar: AppBar(
+        title: const Text('Sign Up'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/welcome'),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppConstants.space24),
         child: Form(
@@ -122,7 +128,7 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
               ),
               const SizedBox(height: AppConstants.space24),
               OutlinedButton.icon(
-                onPressed: () => context.push('/signup-phone'),
+                onPressed: () => context.pushReplacement('/signup-phone'),
                 icon: const Icon(Icons.phone_outlined),
                 label: const Text('Sign up with Phone Number'),
                 style: OutlinedButton.styleFrom(

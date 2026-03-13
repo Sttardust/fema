@@ -65,7 +65,7 @@ class RoleSelectionScreen extends ConsumerWidget {
               role: UserRole.teacher,
               onTap: () {
                 ref.read(onboardingProvider.notifier).setRole(UserRole.teacher);
-                context.push('/onboarding/teacher-experience');
+                context.push('/onboarding/teacher-intro');
               },
             ),
             const SizedBox(height: AppConstants.space16),
