@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_button.dart';
@@ -174,7 +173,7 @@ class _ContentEditorScreenState extends ConsumerState<ContentEditorScreen> {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))],
                 ),
                 child: Row(
                   children: [
@@ -187,7 +186,7 @@ class _ContentEditorScreenState extends ConsumerState<ContentEditorScreen> {
                             side: const BorderSide(color: AppColors.greyLight),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                          child: const Text('Back', style: TextStyle(color: AppColors.textReadability)),
+                          child: const Text('Back', style: TextStyle(color: AppColors.textBody)),
                         ),
                       ),
                     if (_currentStep > 0) const SizedBox(width: 16),
@@ -322,9 +321,7 @@ class _ContentEditorScreenState extends ConsumerState<ContentEditorScreen> {
         ),
         const SizedBox(height: 24),
 
-        ..._modules.asMap().entries.map((entry) {
-          final moduleIndex = entry.key;
-          final module = entry.value;
+        ..._modules.map((module) {
           final lessons = module['lessons'] as List<String>;
 
           return Container(
@@ -443,7 +440,7 @@ class _ContentEditorScreenState extends ConsumerState<ContentEditorScreen> {
                 subtitle: Text('Allow students to ask questions inside lessons.', style: AppTextStyles.caption.copyWith(color: AppColors.grey)),
                 value: _enableComments,
                 onChanged: (v) => setState(() => _enableComments = v),
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
               ),
               const Divider(height: 1),
               SwitchListTile(
@@ -451,7 +448,7 @@ class _ContentEditorScreenState extends ConsumerState<ContentEditorScreen> {
                 subtitle: Text('Students can download materials to view offline.', style: AppTextStyles.caption.copyWith(color: AppColors.grey)),
                 value: _enableDownloads,
                 onChanged: (v) => setState(() => _enableDownloads = v),
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
               ),
             ],
           ),
@@ -498,7 +495,7 @@ class _ContentEditorScreenState extends ConsumerState<ContentEditorScreen> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       items: items.map((i) => DropdownMenuItem(value: i, child: Text(i, style: const TextStyle(fontSize: 14)))).toList(),
       onChanged: onChanged,
       icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.grey),
