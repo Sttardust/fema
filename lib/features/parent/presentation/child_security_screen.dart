@@ -22,7 +22,7 @@ class ChildSecurityScreen extends ConsumerWidget {
           : ListView.separated(
               padding: const EdgeInsets.all(AppConstants.space16),
               itemCount: children.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              separatorBuilder: (context, index) => const SizedBox(height: 16),
               itemBuilder: (context, index) {
                 final child = children[index];
                 return _ChildSecurityCard(child: child, index: index);
@@ -103,15 +103,13 @@ class _ChildSecurityCard extends ConsumerWidget {
           ),
           const Divider(height: 24),
           _CredentialRow(label: 'Username', value: child.username ?? 'Not set'),
-          const SizedBox(height: 8),
-          _CredentialRow(label: 'Password', value: child.password ?? 'Not set', isPassword: true),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => _showEditDialog(context, ref),
               icon: const Icon(Icons.edit_outlined, size: 18),
-              label: const Text('Update Credentials'),
+              label: const Text('Update Username'),
             ),
           ),
         ],
@@ -121,12 +119,11 @@ class _ChildSecurityCard extends ConsumerWidget {
 
   void _showEditDialog(BuildContext context, WidgetRef ref) {
     final userController = TextEditingController(text: child.username);
-    final passController = TextEditingController(text: child.password);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Edit Credentials: ${child.fullName}'),
+        title: Text('Edit Username: ${child.fullName}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -134,21 +131,15 @@ class _ChildSecurityCard extends ConsumerWidget {
               controller: userController,
               decoration: const InputDecoration(labelText: 'Username'),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: passController,
-              decoration: const InputDecoration(labelText: 'Password'),
-            ),
           ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
-              await ref.read(onboardingProvider.notifier).updateChildCredentials(
+              await ref.read(onboardingProvider.notifier).updateChildUsername(
                 index,
                 userController.text,
-                passController.text,
               );
               if (context.mounted) Navigator.pop(context);
             },
@@ -163,12 +154,10 @@ class _ChildSecurityCard extends ConsumerWidget {
 class _CredentialRow extends StatefulWidget {
   final String label;
   final String value;
-  final bool isPassword;
 
   const _CredentialRow({
     required this.label,
     required this.value,
-    this.isPassword = false,
   });
 
   @override
@@ -176,8 +165,6 @@ class _CredentialRow extends StatefulWidget {
 }
 
 class _CredentialRowState extends State<_CredentialRow> {
-  bool _obscured = true;
-
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -188,16 +175,11 @@ class _CredentialRowState extends State<_CredentialRow> {
           children: [
             Text(widget.label, style: AppTextStyles.bodySmall),
             Text(
-              widget.isPassword && _obscured ? '••••••••' : widget.value,
-              style: AppTextStyles.bodyMedium.copyWith(letterSpacing: widget.isPassword && _obscured ? 2 : 0),
+              widget.value,
+              style: AppTextStyles.bodyMedium,
             ),
           ],
         ),
-        if (widget.isPassword)
-          IconButton(
-            icon: Icon(_obscured ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 20),
-            onPressed: () => setState(() => _obscured = !_obscured),
-          ),
       ],
     );
   }

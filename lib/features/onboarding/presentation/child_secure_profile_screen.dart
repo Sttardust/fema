@@ -5,6 +5,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
 import '../domain/onboarding_provider.dart';
 import 'widgets/onboarding_progress_header.dart';
 
@@ -18,16 +19,10 @@ class ChildSecureProfileScreen extends ConsumerStatefulWidget {
 class _ChildSecureProfileScreenState extends ConsumerState<ChildSecureProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
     _usernameController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -37,7 +32,6 @@ class _ChildSecureProfileScreenState extends ConsumerState<ChildSecureProfileScr
       ref.read(onboardingProvider.notifier).updateActiveChild(
             currentChild.copyWith(
               username: _usernameController.text,
-              password: _passwordController.text,
             ),
           );
       context.push('/onboarding/child-basic');
@@ -47,6 +41,7 @@ class _ChildSecureProfileScreenState extends ConsumerState<ChildSecureProfileScr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: OnboardingProgressHeader(
         currentStep: 2,
         totalSteps: 8,
@@ -61,64 +56,65 @@ class _ChildSecureProfileScreenState extends ConsumerState<ChildSecureProfileScr
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: AppConstants.space32),
+              
+              // Header Icon
+              Center(
+                child: Container(
+                  width: 80, height: 80,
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.shield_outlined, size: 40, color: AppColors.secondary),
+                ),
+              ),
+              const SizedBox(height: 24),
+
               Text(
-                "Create a Secure profile information",
-                style: AppTextStyles.headlineMedium,
+                "Create a Secure\nProfile Information",
+                style: AppTextStyles.headlineMedium.copyWith(fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: AppConstants.space16),
+              const SizedBox(height: 12),
               Text(
-                "Set a username and password your child can use to log in safely. Make it something memorable and age-appropriate.",
+                "Create a child username that is easy to remember and safe to share within your household.",
                 style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: AppConstants.space32),
-              Text("Username", style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
-              TextFormField(
+              const SizedBox(height: 40),
+
+              const _FormLabel(label: "Username"),
+              AppTextField(
                 controller: _usernameController,
-                decoration: const InputDecoration(hintText: 'temesgen'),
+                hintText: 'e.g. kidus2015',
                 validator: (value) => value == null || value.isEmpty ? 'Required' : null,
               ),
-              const SizedBox(height: AppConstants.space20),
-              Text("Create Password", style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  hintText: '**************',
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                  ),
-                ),
-                validator: (value) => value == null || value.isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: AppConstants.space20),
-              Text("Confirm Password", style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
-              TextFormField(
-                controller: _confirmPasswordController,
-                obscureText: _obscureConfirmPassword,
-                decoration: InputDecoration(
-                  hintText: '**************',
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                  ),
-                ),
-                validator: (value) {
-                  if (value != _passwordController.text) return 'Passwords do not match';
-                  return null;
-                },
-              ),
-              const SizedBox(height: AppConstants.space48),
+              
+              const SizedBox(height: 48),
               AppButton(
                 text: 'Continue',
                 onPressed: _onContinue,
               ),
-              const SizedBox(height: AppConstants.space32),
+              const SizedBox(height: 32),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FormLabel extends StatelessWidget {
+  final String label;
+  const _FormLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        label,
+        style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600, color: AppColors.textHeadline),
       ),
     );
   }

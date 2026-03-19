@@ -5,7 +5,6 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
-import '../../onboarding/domain/onboarding_provider.dart';
 import '../domain/auth_repository.dart';
 
 class EmailLoginScreen extends ConsumerStatefulWidget {
@@ -28,13 +27,8 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
           _passwordController.text,
         );
 
-        final onboardingState = ref.read(onboardingProvider);
         if (mounted) {
-          if (onboardingState.role == UserRole.none) {
-            context.push('/onboarding');
-          } else {
-            context.go('/home');
-          }
+          context.go('/');
         }
       } catch (e) {
         if (mounted) {
@@ -101,8 +95,27 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {
-                    // TODO: Implement forgot password
+                  onPressed: () async {
+                    final email = _emailController.text.trim();
+                    if (!email.contains('@')) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Enter your email first')),
+                      );
+                      return;
+                    }
+
+                    try {
+                      await ref.read(authRepositoryProvider).sendPasswordResetEmail(email);
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Password reset email sent')),
+                      );
+                    } catch (error) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Reset failed: $error')),
+                      );
+                    }
                   },
                   child: const Text('Forgot Password?'),
                 ),

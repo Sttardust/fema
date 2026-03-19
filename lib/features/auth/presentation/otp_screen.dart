@@ -11,7 +11,13 @@ import '../domain/auth_repository.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   final String verificationId;
-  const OtpScreen({super.key, required this.verificationId});
+  final String redirectPath;
+
+  const OtpScreen({
+    super.key,
+    required this.verificationId,
+    required this.redirectPath,
+  });
 
   @override
   ConsumerState<OtpScreen> createState() => _OtpScreenState();
@@ -67,10 +73,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                     smsCode: pin,
                   );
                   await ref.read(authRepositoryProvider).signInWithCredential(credential);
-                  if (context.mounted) {
-                    context.push('/onboarding/details');
-                  }
+                  if (!context.mounted) return;
+                  context.go(widget.redirectPath);
                 } catch (e) {
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Invalid code. Please try again.')),
                   );
@@ -88,10 +94,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                       smsCode: pinController.text,
                     );
                     await ref.read(authRepositoryProvider).signInWithCredential(credential);
-                    if (context.mounted) {
-                      context.push('/onboarding/details');
-                    }
+                    if (!context.mounted) return;
+                    context.go(widget.redirectPath);
                   } catch (e) {
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Invalid code. Please try again.')),
                     );

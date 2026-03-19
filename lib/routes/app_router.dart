@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/services/firestore_service.dart';
+import '../features/auth/domain/auth_repository.dart';
 import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/presentation/welcome_screen.dart';
 import '../features/auth/presentation/email_signup_screen.dart';
@@ -28,7 +30,6 @@ import '../features/onboarding/presentation/language_selection_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/home/presentation/search_screen.dart';
 import '../features/onboarding/presentation/fema_intro_screen.dart';
-import '../features/onboarding/presentation/teacher_onboarding_screens.dart';
 import '../features/library/presentation/library_screen.dart';
 import '../features/library/presentation/course_details_screen.dart';
 import '../features/library/presentation/video_player_screen.dart';
@@ -39,23 +40,59 @@ import '../features/teacher/presentation/class_management_screen.dart';
 import '../features/teacher/presentation/content_editor_screen.dart';
 import '../features/teacher/presentation/teacher_home_screen.dart';
 
-// Placeholder screens for router setup
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
-  const PlaceholderScreen({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(child: Text('Welcome to $title')),
-    );
-  }
-}
-
 final routerProvider = Provider<GoRouter>((ref) {
+  final authState = ref.watch(authStateProvider);
+  final user = authState.asData?.value;
+  final userProfile = user == null
+      ? const AsyncData<Map<String, dynamic>?>(null)
+      : ref.watch(userProfileProvider(user.uid));
+
+  final isLoading = authState.isLoading || (user != null && userProfile.isLoading);
+  final profileData = userProfile.asData?.value;
+  final hasCompletedOnboarding = (profileData?['role'] as String?)?.isNotEmpty ?? false;
+
   return GoRouter(
     initialLocation: '/',
+    redirect: (context, state) {
+      final location = state.matchedLocation;
+      final isAuthRoute = location == '/welcome' ||
+          location == '/login' ||
+          location == '/signup' ||
+          location == '/signup-phone' ||
+          location == '/login-phone' ||
+          location == '/otp';
+      final isOnboardingRoute = location.startsWith('/onboarding');
+      final isProtectedRoute = location == '/home' ||
+          location.startsWith('/home/') ||
+          location == '/library' ||
+          location.startsWith('/library/') ||
+          location == '/profile' ||
+          location.startsWith('/teacher/') ||
+          location.startsWith('/admin/') ||
+          location.startsWith('/parent/');
+
+      if (isLoading) {
+        return location == '/' ? null : '/';
+      }
+
+      if (user == null) {
+        if (location == '/') return '/welcome';
+        if (isProtectedRoute) return '/welcome';
+        return null;
+      }
+
+      if (!hasCompletedOnboarding) {
+        if (location == '/') return '/onboarding';
+        if (isProtectedRoute) return '/onboarding';
+        return null;
+      }
+
+      if (location == '/' || isAuthRoute || isOnboardingRoute) {
+        return '/home';
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/',
@@ -84,8 +121,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/otp',
         builder: (context, state) {
-          final verificationId = state.extra as String;
-          return OtpScreen(verificationId: verificationId);
+          final args = state.extra as Map<String, dynamic>? ?? const {};
+          final verificationId = args['verificationId'] as String?;
+          final redirectPath = args['redirectPath'] as String? ?? '/';
+
+          if (verificationId == null) {
+            return const WelcomeScreen();
+          }
+
+          return OtpScreen(
+            verificationId: verificationId,
+            redirectPath: redirectPath,
+          );
         },
       ),
       GoRoute(

@@ -1,29 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_logo.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _navigateToNext();
-  }
-
-  Future<void> _navigateToNext() async {
-    // Simulate app initialization / auth check
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      context.go('/onboarding/language');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +16,7 @@ class _SplashScreenState extends State<SplashScreen> {
             const AppLogo(width: 150),
             const SizedBox(height: 48),
             CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.8)),
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.8)),
             ),
           ],
         ),

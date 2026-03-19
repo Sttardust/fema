@@ -16,8 +16,12 @@ class FirestoreService {
     );
   }
 
-  Stream<DocumentSnapshot> getUserProfile(String uid) {
+  Stream<DocumentSnapshot<Map<String, dynamic>>> getUserProfile(String uid) {
     return _db.collection('users').doc(uid).snapshots();
+  }
+
+  Stream<Map<String, dynamic>?> watchUserProfileData(String uid) {
+    return getUserProfile(uid).map((snapshot) => snapshot.data());
   }
 
   Future<List<Map<String, dynamic>>> getCourses() async {
@@ -70,7 +74,7 @@ class FirestoreService {
     });
   }
 
-  Future<void> updateChildCredentials(String uid, int childIndex, String username, String password) async {
+  Future<void> updateChildUsername(String uid, int childIndex, String username) async {
     final userDoc = await _db.collection('users').doc(uid).get();
     if (!userDoc.exists) return;
 
@@ -81,7 +85,6 @@ class FirestoreService {
       children[childIndex] = {
         ...children[childIndex],
         'username': username,
-        'password': password,
       };
       
       await _db.collection('users').doc(uid).update({
@@ -108,4 +111,8 @@ final firestoreProvider = Provider<FirebaseFirestore>((ref) {
 
 final firestoreServiceProvider = Provider<FirestoreService>((ref) {
   return FirestoreService(ref.watch(firestoreProvider));
+});
+
+final userProfileProvider = StreamProvider.family<Map<String, dynamic>?, String>((ref, uid) {
+  return ref.watch(firestoreServiceProvider).watchUserProfileData(uid);
 });

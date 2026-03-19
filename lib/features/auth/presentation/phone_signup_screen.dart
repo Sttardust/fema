@@ -27,7 +27,13 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
         codeSent: (verificationId, resendToken) {
           // Store phone in onboarding state for later use
           ref.read(onboardingProvider.notifier).updatePersonalDetails(phone: _phoneController.text);
-          context.push('/otp', extra: verificationId);
+          context.push(
+            '/otp',
+            extra: {
+              'verificationId': verificationId,
+              'redirectPath': '/onboarding/details',
+            },
+          );
         },
         verificationFailed: (e) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -67,10 +73,10 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
             const SizedBox(height: AppConstants.space40),
             Row(
               children: [
-               Container(
+	               Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
-                    color: AppColors.greyLight.withOpacity(0.3),
+                    color: AppColors.greyLight.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.greyLight),
                   ),

@@ -6,6 +6,7 @@ abstract class AuthRepository {
   User? get currentUser;
   Future<UserCredential> signUpWithEmail(String email, String password);
   Future<UserCredential> signInWithEmail(String email, String password);
+  Future<void> sendPasswordResetEmail(String email);
   Future<void> signOut();
   Future<void> verifyPhoneNumber({
     required String phoneNumber,
@@ -43,6 +44,11 @@ class FirebaseAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _auth.sendPasswordResetEmail(email: email);
+  }
+
+  @override
   Future<void> signOut() async {
     await _auth.signOut();
   }
@@ -76,4 +82,8 @@ final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return FirebaseAuthRepository(ref.watch(firebaseAuthProvider));
+});
+
+final authStateProvider = StreamProvider<User?>((ref) {
+  return ref.watch(authRepositoryProvider).authStateChanges;
 });

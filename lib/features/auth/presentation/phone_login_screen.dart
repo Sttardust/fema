@@ -17,14 +17,27 @@ class PhoneLoginScreen extends ConsumerStatefulWidget {
 class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
-  final _passwordController = TextEditingController();
 
   Future<void> _onLogin() async {
     if (_formKey.currentState!.validate()) {
-      // For now, phone login might need a different flow or just password
-      // Since the request said "phone field and the password field"
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Phone login with password not yet fully implemented in backend')),
+      final phoneNumber = '+251${_phoneController.text}';
+
+      await ref.read(authRepositoryProvider).verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        codeSent: (verificationId, resendToken) {
+          context.push(
+            '/otp',
+            extra: {
+              'verificationId': verificationId,
+              'redirectPath': '/',
+            },
+          );
+        },
+        verificationFailed: (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message ?? 'Verification failed')),
+          );
+        },
       );
     }
   }
@@ -53,7 +66,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
               ),
               const SizedBox(height: AppConstants.space8),
               Text(
-                'Log in with your phone number and password.',
+                'Log in with your phone number. We will send a verification code.',
                 style: AppTextStyles.bodyMedium,
                 textAlign: TextAlign.center,
               ),
@@ -69,21 +82,9 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: AppConstants.space20),
-              AppTextField(
-                controller: _passwordController,
-                hintText: 'Enter your password',
-                labelText: 'Password',
-                isPassword: true,
-                prefixIcon: const Icon(Icons.lock_outline),
-                validator: (value) {
-                  if (value == null || value.length < 6) return 'Password too short';
-                  return null;
-                },
-              ),
               const SizedBox(height: AppConstants.space32),
               AppButton(
-                text: 'Log In',
+                text: 'Send Code',
                 onPressed: _onLogin,
               ),
               const SizedBox(height: AppConstants.space24),

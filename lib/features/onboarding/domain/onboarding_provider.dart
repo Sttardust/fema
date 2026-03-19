@@ -9,7 +9,6 @@ class ChildProfile {
   final String? gender;
   final DateTime? birthDate;
   final String? username;
-  final String? password;
   final String? grade;
   final List<String> confidentSubjects;
   final List<String> improvementSubjects;
@@ -20,7 +19,6 @@ class ChildProfile {
     this.gender,
     this.birthDate,
     this.username,
-    this.password,
     this.grade,
     this.confidentSubjects = const [],
     this.improvementSubjects = const [],
@@ -32,7 +30,6 @@ class ChildProfile {
     String? gender,
     DateTime? birthDate,
     String? username,
-    String? password,
     String? grade,
     List<String>? confidentSubjects,
     List<String>? improvementSubjects,
@@ -43,7 +40,6 @@ class ChildProfile {
       gender: gender ?? this.gender,
       birthDate: birthDate ?? this.birthDate,
       username: username ?? this.username,
-      password: password ?? this.password,
       grade: grade ?? this.grade,
       confidentSubjects: confidentSubjects ?? this.confidentSubjects,
       improvementSubjects: improvementSubjects ?? this.improvementSubjects,
@@ -374,19 +370,18 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     state = state.copyWith(isAddingChild: false);
   }
 
-  Future<void> updateChildCredentials(int index, String username, String password) async {
+  Future<void> updateChildUsername(int index, String username) async {
     if (index < state.children.length) {
       final updatedChildren = List<ChildProfile>.from(state.children);
       updatedChildren[index] = updatedChildren[index].copyWith(
         username: username,
-        password: password,
       );
       
       state = state.copyWith(children: updatedChildren);
       
       final user = _authRepository.currentUser;
       if (user != null) {
-        await _firestoreService.updateChildCredentials(user.uid, index, username, password);
+        await _firestoreService.updateChildUsername(user.uid, index, username);
       }
     }
   }
