@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/services/firestore_service.dart';
 import '../features/auth/domain/auth_repository.dart';
 import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/presentation/welcome_screen.dart';
@@ -39,17 +38,17 @@ import '../features/parent/presentation/child_security_screen.dart';
 import '../features/teacher/presentation/class_management_screen.dart';
 import '../features/teacher/presentation/content_editor_screen.dart';
 import '../features/teacher/presentation/teacher_home_screen.dart';
+import '../features/profile/domain/user_profile_repository.dart';
+import '../features/onboarding/domain/onboarding_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
   final user = authState.asData?.value;
-  final userProfile = user == null
-      ? const AsyncData<Map<String, dynamic>?>(null)
-      : ref.watch(userProfileProvider(user.uid));
+  final userProfile = ref.watch(currentUserProfileProvider);
 
   final isLoading = authState.isLoading || (user != null && userProfile.isLoading);
-  final profileData = userProfile.asData?.value;
-  final hasCompletedOnboarding = (profileData?['role'] as String?)?.isNotEmpty ?? false;
+  final profile = userProfile.asData?.value;
+  final hasCompletedOnboarding = profile?.hasCompletedOnboarding ?? false;
 
   return GoRouter(
     initialLocation: '/',
@@ -70,6 +69,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           location.startsWith('/teacher/') ||
           location.startsWith('/admin/') ||
           location.startsWith('/parent/');
+      final isTeacherRoute = location.startsWith('/teacher/');
+      final isAdminRoute = location.startsWith('/admin/');
+      final isParentRoute = location.startsWith('/parent/');
 
       if (isLoading) {
         return location == '/' ? null : '/';
@@ -81,13 +83,30 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
+      if (profile == null) {
+        return location == '/' ? null : '/';
+      }
+
       if (!hasCompletedOnboarding) {
         if (location == '/') return '/onboarding';
         if (isProtectedRoute) return '/onboarding';
         return null;
       }
 
+      if (isTeacherRoute && profile.role != UserRole.teacher) {
+        return '/home';
+      }
+
+      if (isAdminRoute && profile.role != UserRole.admin) {
+        return '/home';
+      }
+
+      if (isParentRoute && profile.role != UserRole.parent) {
+        return '/home';
+      }
+
       if (location == '/' || isAuthRoute || isOnboardingRoute) {
+        if (profile.role == UserRole.teacher) return '/teacher/home';
         return '/home';
       }
 

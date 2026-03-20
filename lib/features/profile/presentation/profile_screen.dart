@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../auth/domain/auth_repository.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../onboarding/domain/onboarding_provider.dart';
+import '../domain/user_profile.dart';
+import '../domain/user_profile_repository.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(onboardingProvider);
+    final profileAsync = ref.watch(currentUserProfileProvider);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -24,77 +25,87 @@ class ProfileScreen extends ConsumerWidget {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 8),
-            _buildProfileHeader(state),
-            const SizedBox(height: 32),
-            _buildSettingsGroup(
-              context,
-              title: 'Account',
-              items: [
-                _SettingsItem(
-                  icon: Icons.person_outline,
-                  label: 'Personal Details',
-                  onTap: () => _showPersonalDetailsSheet(context, state),
+      body: profileAsync.when(
+        data: (profile) {
+          if (profile == null) {
+            return const Center(child: Text('Profile not found'));
+          }
+
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: 8),
+                _buildProfileHeader(profile),
+                const SizedBox(height: 32),
+                _buildSettingsGroup(
+                  context,
+                  title: 'Account',
+                  items: [
+                    _SettingsItem(
+                      icon: Icons.person_outline,
+                      label: 'Personal Details',
+                      onTap: () => _showPersonalDetailsSheet(context, profile),
+                    ),
+                    _SettingsItem(
+                      icon: Icons.security_outlined,
+                      label: 'Security',
+                      onTap: () => _showChangePasswordSheet(context),
+                    ),
+                  ],
                 ),
-                _SettingsItem(
-                  icon: Icons.security_outlined,
-                  label: 'Security',
-                  onTap: () => _showChangePasswordSheet(context),
+                const SizedBox(height: 20),
+                _buildSettingsGroup(
+                  context,
+                  title: 'Preferences',
+                  items: [
+                    _SettingsItem(
+                      icon: Icons.notifications_outlined,
+                      label: 'Notifications',
+                      trailing: _buildSwitch(true),
+                      onTap: () {},
+                    ),
+                    _SettingsItem(
+                      icon: Icons.language_outlined,
+                      label: 'Language',
+                      trailingText: 'English',
+                      onTap: () {},
+                    ),
+                    _SettingsItem(
+                      icon: Icons.dark_mode_outlined,
+                      label: 'Dark Mode',
+                      trailing: _buildSwitch(false),
+                      onTap: () {},
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 20),
+                _buildSettingsGroup(
+                  context,
+                  title: 'Support',
+                  items: [
+                    _SettingsItem(
+                      icon: Icons.help_outline,
+                      label: 'Help & Support',
+                      onTap: () {},
+                    ),
+                    _SettingsItem(
+                      icon: Icons.info_outline,
+                      label: 'About',
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                _buildLogoutButton(context, ref),
+                const SizedBox(height: 16),
+                _buildDeleteAccountButton(context),
+                const SizedBox(height: 40),
               ],
             ),
-            const SizedBox(height: 20),
-            _buildSettingsGroup(
-              context,
-              title: 'Preferences',
-              items: [
-                _SettingsItem(
-                  icon: Icons.notifications_outlined,
-                  label: 'Notifications',
-                  trailing: _buildSwitch(true),
-                  onTap: () {},
-                ),
-                _SettingsItem(
-                  icon: Icons.language_outlined,
-                  label: 'Language',
-                  trailingText: 'English',
-                  onTap: () {},
-                ),
-                _SettingsItem(
-                  icon: Icons.dark_mode_outlined,
-                  label: 'Dark Mode',
-                  trailing: _buildSwitch(false),
-                  onTap: () {},
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _buildSettingsGroup(
-              context,
-              title: 'Support',
-              items: [
-                _SettingsItem(
-                  icon: Icons.help_outline,
-                  label: 'Help & Support',
-                  onTap: () {},
-                ),
-                _SettingsItem(
-                  icon: Icons.info_outline,
-                  label: 'About',
-                  onTap: () {},
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            _buildLogoutButton(context),
-            const SizedBox(height: 16),
-            _buildDeleteAccountButton(context),
-            const SizedBox(height: 40),
-          ],
-        ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Error loading profile: $error')),
       ),
     );
   }
@@ -103,13 +114,13 @@ class ProfileScreen extends ConsumerWidget {
     return Switch(
       value: value,
       onChanged: (v) {},
-      activeColor: AppColors.primary,
+      activeThumbColor: AppColors.primary,
     );
   }
 
-  Widget _buildProfileHeader(OnboardingState state) {
-    final initials = (state.firstName?.isNotEmpty == true ? state.firstName![0] : '') +
-        (state.surName?.isNotEmpty == true ? state.surName![0] : '');
+  Widget _buildProfileHeader(AppUserProfile profile) {
+    final initials = (profile.firstName?.isNotEmpty == true ? profile.firstName![0] : '') +
+        (profile.surName?.isNotEmpty == true ? profile.surName![0] : '');
 
     return Center(
       child: Column(
@@ -126,7 +137,7 @@ class ProfileScreen extends ConsumerWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.3),
+                  color: AppColors.primary.withValues(alpha: 0.3),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -145,18 +156,18 @@ class ProfileScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            '${state.firstName ?? 'User'} ${state.surName ?? ''}',
+            profile.fullName,
             style: AppTextStyles.headlineSmall.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              state.role.name.toUpperCase(),
+              profile.role.name.toUpperCase(),
               style: AppTextStyles.caption.copyWith(
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,
@@ -224,7 +235,7 @@ class ProfileScreen extends ConsumerWidget {
                     if (index < items.length - 1)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Divider(height: 1, color: AppColors.greyLight.withOpacity(0.5)),
+                        child: Divider(height: 1, color: AppColors.greyLight.withValues(alpha: 0.5)),
                       ),
                   ],
                 );
@@ -236,17 +247,21 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLogoutButton(BuildContext context) {
+  Widget _buildLogoutButton(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: SizedBox(
         width: double.infinity,
         height: 50,
         child: OutlinedButton(
-          onPressed: () => context.go('/'),
+          onPressed: () async {
+            await ref.read(authRepositoryProvider).signOut();
+            if (!context.mounted) return;
+            context.go('/');
+          },
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.error,
-            side: BorderSide(color: AppColors.error.withOpacity(0.5)),
+            side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: const Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -268,7 +283,7 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _showPersonalDetailsSheet(BuildContext context, OnboardingState state) {
+  void _showPersonalDetailsSheet(BuildContext context, AppUserProfile profile) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -303,13 +318,13 @@ class ProfileScreen extends ConsumerWidget {
                 style: AppTextStyles.headlineSmall.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
-              _buildDetailField('First Name', state.firstName ?? 'Not provided'),
-              _buildDetailField('Sur Name', state.surName ?? 'Not provided'),
-              _buildDetailField('Email', state.email ?? 'Not provided'),
-              _buildDetailField('Phone', state.phone ?? 'Not provided'),
-              _buildDetailField('Gender', state.gender ?? 'Not provided'),
-              if (state.school != null) _buildDetailField('School', state.school!),
-              if (state.grade != null) _buildDetailField('Grade', state.grade!),
+              _buildDetailField('First Name', profile.firstName ?? 'Not provided'),
+              _buildDetailField('Sur Name', profile.surName ?? 'Not provided'),
+              _buildDetailField('Email', profile.email ?? 'Not provided'),
+              _buildDetailField('Phone', profile.phone ?? 'Not provided'),
+              _buildDetailField('Gender', profile.gender ?? 'Not provided'),
+              if (profile.school != null) _buildDetailField('School', profile.school!),
+              if (profile.grade != null) _buildDetailField('Grade', profile.grade!),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,

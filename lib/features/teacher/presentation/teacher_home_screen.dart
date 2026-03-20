@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../onboarding/domain/onboarding_provider.dart';
 import '../../library/domain/library_provider.dart';
 import '../../library/domain/models.dart';
 import '../../notifications/presentation/notifications_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
+import '../../profile/domain/user_profile_repository.dart';
 import 'class_management_screen.dart';
 
 // ─── Tab State Provider ───
@@ -54,7 +53,7 @@ class _TeacherNavBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -2)),
         ],
       ),
       child: SafeArea(
@@ -105,9 +104,9 @@ class _TeacherDashboard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(onboardingProvider);
-    final firstName = state.firstName ?? 'Teacher';
-    final coursesAsync = ref.watch(coursesProvider);
+    final profile = ref.watch(currentUserProfileProvider).asData?.value;
+    final firstName = profile?.firstName ?? 'Teacher';
+    final coursesAsync = ref.watch(teacherCoursesProvider);
 
     return SafeArea(
       child: CustomScrollView(
@@ -178,7 +177,7 @@ class _TeacherDashboard extends ConsumerWidget {
                     ),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
-                      BoxShadow(color: AppColors.primary.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6)),
+                      BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 6)),
                     ],
                   ),
                   child: Row(
@@ -203,7 +202,8 @@ class _TeacherDashboard extends ConsumerWidget {
                       Image.asset(
                         'assets/images/Teacher/Course creation/first time.png',
                         height: 90,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.add_circle_outline, size: 80, color: Colors.white54),
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.add_circle_outline, size: 80, color: Colors.white54),
                       ),
                     ],
                   ),
@@ -249,7 +249,7 @@ class _TeacherDashboard extends ConsumerWidget {
                         ),
                       ),
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (_, __) => const Center(child: Text('Could not load courses')),
+                error: (error, stack) => const Center(child: Text('Could not load courses')),
               ),
             ),
           ),
@@ -274,9 +274,9 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.07),
+        color: color.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.15)),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,7 +309,7 @@ class _TeacherCourseCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.greyLight),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,7 +323,7 @@ class _TeacherCourseCard extends StatelessWidget {
                   course.thumbnailUrl,
                   fit: BoxFit.cover,
                   width: double.infinity,
-                  errorBuilder: (_, __, ___) => Center(
+                  errorBuilder: (context, error, stackTrace) => Center(
                     child: Text(
                       course.subject.name.toUpperCase(),
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),

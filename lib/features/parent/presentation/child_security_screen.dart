@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../profile/domain/user_profile.dart';
+import '../../profile/domain/user_profile_repository.dart';
 import '../../onboarding/domain/onboarding_provider.dart';
 
 class ChildSecurityScreen extends ConsumerWidget {
@@ -11,23 +13,32 @@ class ChildSecurityScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final children = ref.watch(onboardingProvider).children;
+    final profileAsync = ref.watch(currentUserProfileProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Child Secure Profiles'),
       ),
-      body: children.isEmpty
-          ? _buildEmptyState()
-          : ListView.separated(
-              padding: const EdgeInsets.all(AppConstants.space16),
-              itemCount: children.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 16),
-              itemBuilder: (context, index) {
-                final child = children[index];
-                return _ChildSecurityCard(child: child, index: index);
-              },
-            ),
+      body: profileAsync.when(
+        data: (profile) {
+          final children = profile?.children ?? const <AppChildProfile>[];
+          if (children.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(AppConstants.space16),
+            itemCount: children.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              final child = children[index];
+              return _ChildSecurityCard(child: child, index: index);
+            },
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Error loading children: $error')),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           ref.read(onboardingProvider.notifier).startAddingChild();
@@ -57,7 +68,7 @@ class ChildSecurityScreen extends ConsumerWidget {
 }
 
 class _ChildSecurityCard extends ConsumerWidget {
-  final ChildProfile child;
+  final AppChildProfile child;
   final int index;
 
   const _ChildSecurityCard({required this.child, required this.index});

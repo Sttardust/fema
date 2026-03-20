@@ -1,14 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/firestore_service.dart';
+import '../../auth/domain/auth_repository.dart';
 import 'models.dart';
 
 class CourseRepository {
   final FirestoreService _firestoreService;
-  CourseRepository(this._firestoreService);
+  final AuthRepository _authRepository;
+  CourseRepository(this._firestoreService, this._authRepository);
 
-  Future<List<Course>> getCourses() async {
+  Future<List<Course>> getCourses({
+    String? ownerId,
+    bool publishedOnly = false,
+  }) async {
     try {
-      final courseData = await _firestoreService.getCourses();
+      final courseData = await _firestoreService.getCourses(
+        ownerId: ownerId,
+        status: publishedOnly ? CourseStatus.published.name : null,
+      );
       List<Course> courses = [];
       
       for (var data in courseData) {
@@ -33,6 +41,8 @@ class CourseRepository {
           lessons: lessons,
           rating: (data['rating'] as num?)?.toDouble() ?? 4.5,
           totalStudents: data['totalStudents'] ?? 0,
+          ownerId: data['ownerId'] as String?,
+          status: _parseStatus(data['status'] as String?),
         ));
       }
       return courses;
@@ -44,12 +54,13 @@ class CourseRepository {
   Future<String> saveCourse(Course course, {bool isDraft = true}) async {
     final data = {
       if (course.id.isNotEmpty) 'id': course.id,
+      'ownerId': course.ownerId ?? _authRepository.currentUser?.uid,
       'title': course.title,
       'description': course.description,
       'subject': course.subject.name,
       'grade': course.grade,
       'thumbnailUrl': course.thumbnailUrl,
-      'status': isDraft ? 'draft' : 'published',
+      'status': isDraft ? CourseStatus.draft.name : CourseStatus.published.name,
       'rating': course.rating,
       'totalStudents': course.totalStudents,
     };
@@ -81,16 +92,37 @@ class CourseRepository {
       default: return CourseSubject.other;
     }
   }
+
+  CourseStatus _parseStatus(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'draft':
+        return CourseStatus.draft;
+      case 'published':
+      default:
+        return CourseStatus.published;
+    }
+  }
 }
 
 final courseRepositoryProvider = Provider((ref) {
   final firestoreService = ref.watch(firestoreServiceProvider);
-  return CourseRepository(firestoreService);
+  final authRepository = ref.watch(authRepositoryProvider);
+  return CourseRepository(firestoreService, authRepository);
 });
 
 final coursesProvider = FutureProvider<List<Course>>((ref) async {
   final repository = ref.watch(courseRepositoryProvider);
-  return repository.getCourses();
+  return repository.getCourses(publishedOnly: true);
+});
+
+final teacherCoursesProvider = FutureProvider<List<Course>>((ref) async {
+  final repository = ref.watch(courseRepositoryProvider);
+  final user = ref.watch(authStateProvider).asData?.value;
+  if (user == null) {
+    return const <Course>[];
+  }
+
+  return repository.getCourses(ownerId: user.uid);
 });
 
 final selectedCourseProvider = StateProvider<Course?>((ref) => null);

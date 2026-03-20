@@ -24,8 +24,32 @@ class FirestoreService {
     return getUserProfile(uid).map((snapshot) => snapshot.data());
   }
 
-  Future<List<Map<String, dynamic>>> getCourses() async {
-    final snapshot = await _db.collection('courses').get();
+  Stream<List<Map<String, dynamic>>> watchTeacherClasses(String teacherId) {
+    return _db
+        .collection('classes')
+        .where('teacherId', isEqualTo: teacherId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
+  }
+
+  Future<List<Map<String, dynamic>>> getClassStudents(String classId) async {
+    final snapshot = await _db.collection('classes').doc(classId).collection('students').get();
+    return snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getCourses({
+    String? ownerId,
+    String? status,
+  }) async {
+    Query<Map<String, dynamic>> query = _db.collection('courses');
+    if (ownerId != null) {
+      query = query.where('ownerId', isEqualTo: ownerId);
+    }
+    if (status != null) {
+      query = query.where('status', isEqualTo: status);
+    }
+
+    final snapshot = await query.get();
     return snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
   }
 
@@ -111,8 +135,4 @@ final firestoreProvider = Provider<FirebaseFirestore>((ref) {
 
 final firestoreServiceProvider = Provider<FirestoreService>((ref) {
   return FirestoreService(ref.watch(firestoreProvider));
-});
-
-final userProfileProvider = StreamProvider.family<Map<String, dynamic>?, String>((ref, uid) {
-  return ref.watch(firestoreServiceProvider).watchUserProfileData(uid);
 });

@@ -58,13 +58,14 @@ class _ContentEditorScreenState extends ConsumerState<ContentEditorScreen> {
       final course = Course(
         id: '',
         title: _titleController.text,
-        description: 'Auto-generated syllabus course', // Placeholder
+        description: '${_difficulty == 'Academic' ? 'Academic' : 'General focus'} course created from the teacher editor.',
         subject: CourseSubject.values.firstWhere(
           (e) => e.name.toLowerCase() == _selectedSubject.toLowerCase(),
           orElse: () => CourseSubject.other,
         ),
         grade: _selectedGrade,
         thumbnailUrl: '', // Default or placeholder
+        status: isPublish ? CourseStatus.published : CourseStatus.draft,
         lessons: _modules.expand((m) => (m['lessons'] as List<String>).map((title) => Lesson(
           id: '',
           title: title,

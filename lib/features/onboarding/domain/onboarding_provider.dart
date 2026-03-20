@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/services/firestore_service.dart';
 import '../../auth/domain/auth_repository.dart';
+import '../../profile/domain/user_profile.dart';
+import '../../profile/domain/user_profile_repository.dart';
 
 enum UserRole { student, parent, teacher, admin, none }
 
@@ -191,10 +192,10 @@ class OnboardingState {
 }
 
 class OnboardingNotifier extends StateNotifier<OnboardingState> {
-  final FirestoreService _firestoreService;
+  final UserProfileRepository _userProfileRepository;
   final AuthRepository _authRepository;
 
-  OnboardingNotifier(this._firestoreService, this._authRepository) : super(OnboardingState());
+  OnboardingNotifier(this._userProfileRepository, this._authRepository) : super(OnboardingState());
 
   void setRole(UserRole role) => state = state.copyWith(role: role, currentStep: 2);
   
@@ -381,7 +382,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       
       final user = _authRepository.currentUser;
       if (user != null) {
-        await _firestoreService.updateChildUsername(user.uid, index, username);
+        await _userProfileRepository.updateChildUsername(user.uid, index, username);
       }
     }
   }
@@ -389,50 +390,16 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   Future<void> completeOnboarding() async {
     final user = _authRepository.currentUser;
     if (user != null) {
-      final userData = {
-        'role': state.role.name,
-        'grade': state.grade,
-        'firstName': state.firstName,
-        'surName': state.surName,
-        'email': state.email,
-        'phone': state.phone,
-        'gender': state.gender,
-        'school': state.school,
-        'lastGrade': state.lastGrade,
-        'confidentSubjects': state.confidentSubjects,
-        'improvementSubjects': state.improvementSubjects,
-        'learningGoals': state.learningGoals,
-        'referralSources': state.referralSources,
-        'otherReferral': state.otherReferral,
-        'quizScore': state.quizScore,
-        'quizSkipped': state.quizSkipped,
-        'teachingGrades': state.teachingGrades,
-        'teachingSubjects': state.teachingSubjects,
-        'pastSchools': state.pastSchools,
-        'helpPreferences': state.helpPreferences,
-        'usesDigitalTools': state.usesDigitalTools,
-        'sharesContent': state.sharesContent,
-        'children': state.children.map((c) => {
-          'fullName': c.fullName,
-          'gender': c.gender,
-          'birthDate': c.birthDate?.toIso8601String(),
-          'username': c.username,
-          'grade': c.grade,
-          'confidentSubjects': c.confidentSubjects,
-          'improvementSubjects': c.improvementSubjects,
-          'learningGoals': c.learningGoals,
-        }).toList(),
-      };
-      
-      await _firestoreService.saveUserProfile(user.uid, userData);
+      final profile = AppUserProfile.fromOnboarding(user.uid, state);
+      await _userProfileRepository.saveProfile(profile);
     }
   }
 }
 
 final onboardingProvider = StateNotifierProvider<OnboardingNotifier, OnboardingState>((ref) {
-  final firestoreService = ref.watch(firestoreServiceProvider);
+  final userProfileRepository = ref.watch(userProfileRepositoryProvider);
   final authRepository = ref.watch(authRepositoryProvider);
-  return OnboardingNotifier(firestoreService, authRepository);
+  return OnboardingNotifier(userProfileRepository, authRepository);
 });
 
 final homeTabProvider = StateProvider<int>((ref) => 0);

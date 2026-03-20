@@ -1,6 +1,5 @@
-
-
 enum CourseSubject { math, science, english, socialStudies, amharic, other }
+enum CourseStatus { draft, published }
 
 class Lesson {
   final String id;
@@ -46,6 +45,8 @@ class Course {
   final List<Lesson> lessons;
   final double rating;
   final int totalStudents;
+  final String? ownerId;
+  final CourseStatus status;
 
   Course({
     required this.id,
@@ -57,6 +58,8 @@ class Course {
     required this.lessons,
     this.rating = 4.5,
     this.totalStudents = 100,
+    this.ownerId,
+    this.status = CourseStatus.published,
   });
 
   int get completedLessons => lessons.where((l) => l.isCompleted).length;

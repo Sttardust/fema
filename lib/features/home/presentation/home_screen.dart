@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../onboarding/domain/onboarding_provider.dart';
@@ -10,6 +9,7 @@ import '../../library/domain/library_provider.dart';
 import '../../library/domain/models.dart';
 import '../../notifications/presentation/notifications_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
+import '../../profile/domain/user_profile_repository.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -33,7 +33,7 @@ class HomeScreen extends ConsumerWidget {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -133,8 +133,9 @@ class _StudentHomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(onboardingProvider);
+    final profile = ref.watch(currentUserProfileProvider).asData?.value;
     final coursesAsync = ref.watch(coursesProvider);
+    final firstName = profile?.firstName ?? 'Student';
 
     return SafeArea(
       child: CustomScrollView(
@@ -157,7 +158,7 @@ class _StudentHomePage extends ConsumerWidget {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    'Fema',
+                    'FEMA',
                     style: AppTextStyles.headlineSmall.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -170,13 +171,18 @@ class _StudentHomePage extends ConsumerWidget {
                       border: Border.all(color: AppColors.greyLight),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.language, size: 16, color: AppColors.grey),
-                        const SizedBox(width: 4),
-                        Text(
-                          'English',
-                          style: AppTextStyles.caption,
+                  child: Row(
+                    children: [
+                      Text(
+                        'Hi, $firstName',
+                        style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(width: 10),
+                      const Icon(Icons.language, size: 16, color: AppColors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        'English',
+                        style: AppTextStyles.caption,
                         ),
                       ],
                     ),

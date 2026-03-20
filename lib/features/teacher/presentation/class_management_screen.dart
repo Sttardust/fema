@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/services/firestore_service.dart';
+import '../domain/class_models.dart';
+import '../domain/class_repository.dart';
 
 class ClassManagementScreen extends ConsumerWidget {
   const ClassManagementScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final classesAsync = ref.watch(teacherClassesProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Class Management'),
@@ -17,38 +21,66 @@ class ClassManagementScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.person_add_alt_1_outlined),
             onPressed: () {
-              // TODO: Implement add student logic
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Student enrollment flow is next to implement.')),
+              );
             },
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.space16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildStatCards(),
-            const SizedBox(height: AppConstants.space24),
-            Text('Your Classes', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: AppConstants.space12),
-            _buildClassList(context, ref),
-            const SizedBox(height: AppConstants.space24),
-            Text('Recent Activity', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: AppConstants.space12),
-            _buildActivityLog(),
-          ],
-        ),
+      body: classesAsync.when(
+        data: (classes) {
+          if (classes.isEmpty) {
+            return _EmptyState(onAddPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Create classes in Firestore to populate this screen.')),
+              );
+            });
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(AppConstants.space16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _ClassStats(classes: classes),
+                const SizedBox(height: AppConstants.space24),
+                Text('Your Classes', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: AppConstants.space12),
+                _ClassList(classes: classes),
+                const SizedBox(height: AppConstants.space24),
+                Text('Recent Activity', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: AppConstants.space12),
+                _RecentActivity(classes: classes),
+              ],
+            ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Could not load classes: $error')),
       ),
     );
   }
+}
 
-  Widget _buildStatCards() {
+class _ClassStats extends StatelessWidget {
+  const _ClassStats({required this.classes});
+
+  final List<TeacherClass> classes;
+
+  @override
+  Widget build(BuildContext context) {
+    final totalStudents = classes.fold<int>(0, (sum, item) => sum + item.studentCount);
+    final averageAttendance = classes.isEmpty
+        ? 0.0
+        : classes.fold<double>(0, (sum, item) => sum + item.attendanceRate) / classes.length;
+
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: _StatCard(
             title: 'Students',
-            count: '124',
+            count: '$totalStudents',
             icon: Icons.people_outline,
             color: AppColors.primary,
           ),
@@ -57,7 +89,7 @@ class ClassManagementScreen extends ConsumerWidget {
         Expanded(
           child: _StatCard(
             title: 'Attendance',
-            count: '98%',
+            count: '${averageAttendance.toStringAsFixed(0)}%',
             icon: Icons.calendar_today_outlined,
             color: Colors.green,
           ),
@@ -65,120 +97,136 @@ class ClassManagementScreen extends ConsumerWidget {
       ],
     );
   }
+}
 
-  Widget _buildClassList(BuildContext context, WidgetRef ref) {
-    final classes = [
-      {'id': 'math10a', 'name': 'Grade 10 Math - Section A', 'students': '32', 'avgScore': '84%'},
-      {'id': 'sci9b', 'name': 'Grade 9 Science - Section B', 'students': '45', 'avgScore': '78%'},
-      {'id': 'amh10c', 'name': 'Grade 10 Amharic - Section C', 'students': '28', 'avgScore': '92%'},
-    ];
+class _ClassList extends StatelessWidget {
+  const _ClassList({required this.classes});
 
+  final List<TeacherClass> classes;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
-      children: classes.map((cls) => Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConstants.radius12),
-          side: BorderSide(color: AppColors.greyLight),
-        ),
-        child: Column(
-          children: [
-            ListTile(
-              contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              title: Text(cls['name']!, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
-              subtitle: Text('${cls['students']} Students • Avg Score: ${cls['avgScore']}', style: AppTextStyles.caption),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _showStudentDetails(context, cls['name']!),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton.icon(
-                    onPressed: () => _showAttendanceDialog(context, ref, cls['id']!, cls['name']!),
-                    icon: const Icon(Icons.check_circle_outline, size: 18),
-                    label: const Text('Take Attendance'),
-                  ),
-                ],
+      children: classes.map((teacherClass) {
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.radius12),
+            side: BorderSide(color: AppColors.greyLight),
+          ),
+          child: Column(
+            children: [
+              ListTile(
+                contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                title: Text(
+                  teacherClass.name,
+                  style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  '${teacherClass.studentCount} Students • Avg Score: ${teacherClass.averageScore.toStringAsFixed(0)}%',
+                  style: AppTextStyles.caption,
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showStudentDetails(context, teacherClass),
               ),
-            ),
-          ],
-        ),
-      )).toList(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => _showAttendanceDialog(context, teacherClass),
+                      icon: const Icon(Icons.check_circle_outline, size: 18),
+                      label: const Text('Take Attendance'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
-  void _showAttendanceDialog(BuildContext context, WidgetRef ref, String classId, String className) {
+  void _showAttendanceDialog(BuildContext context, TeacherClass teacherClass) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => _AttendanceSheet(classId: classId, className: className),
+      builder: (context) => _AttendanceSheet(teacherClass: teacherClass),
     );
   }
 
-  void _showStudentDetails(BuildContext context, String className) {
+  void _showStudentDetails(BuildContext context, TeacherClass teacherClass) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => _StudentListSheet(className: className),
+      builder: (context) => _StudentListSheet(teacherClass: teacherClass),
     );
   }
+}
 
-  Widget _buildActivityLog() {
-    final activity = [
-      {'msg': 'Abebe Kebe completed Quiz 4', 'time': '2h ago'},
-      {'msg': 'New student added to Grade 10 Math', 'time': '5h ago'},
-      {'msg': 'Weekly progress report sent to Parents', 'time': 'Yesterday'},
-    ];
+class _RecentActivity extends StatelessWidget {
+  const _RecentActivity({required this.classes});
+
+  final List<TeacherClass> classes;
+
+  @override
+  Widget build(BuildContext context) {
+    final activity = classes.take(3).map((teacherClass) {
+      return {
+        'msg': 'Loaded ${teacherClass.studentCount} students for ${teacherClass.name}',
+        'time': 'Live',
+      };
+    }).toList();
 
     return Column(
-      children: activity.map((act) => Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
+      children: activity.map((act) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.notifications_outlined, size: 16, color: AppColors.primary),
               ),
-              child: const Icon(Icons.notifications_outlined, size: 16, color: AppColors.primary),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(act['msg']!, style: AppTextStyles.bodySmall),
-                  Text(act['time']!, style: AppTextStyles.caption.copyWith(color: AppColors.grey)),
-                ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(act['msg']!, style: AppTextStyles.bodySmall),
+                    Text(act['time']!, style: AppTextStyles.caption.copyWith(color: AppColors.grey)),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      )).toList(),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }
 
 class _AttendanceSheet extends ConsumerStatefulWidget {
-  final String classId;
-  final String className;
-  const _AttendanceSheet({required this.classId, required this.className});
+  const _AttendanceSheet({required this.teacherClass});
+
+  final TeacherClass teacherClass;
 
   @override
   ConsumerState<_AttendanceSheet> createState() => _AttendanceSheetState();
 }
 
 class _AttendanceSheetState extends ConsumerState<_AttendanceSheet> {
-  final Map<String, bool> _attendance = {
-    'Abebe Kebe': true,
-    'Sara Yosef': true,
-    'Dawit Tekle': false,
-    'Marta Haile': true,
+  late final Map<String, bool> _attendance = {
+    for (final student in widget.teacherClass.students) student.id: true,
   };
   bool _isSaving = false;
 
@@ -193,38 +241,53 @@ class _AttendanceSheetState extends ConsumerState<_AttendanceSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Attendance: ${widget.className}', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                'Attendance: ${widget.teacherClass.name}',
+                style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+              ),
               IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
             ],
           ),
           const SizedBox(height: 16),
-          ..._attendance.keys.map((name) => SwitchListTile(
-            title: Text(name),
-            value: _attendance[name]!,
-            onChanged: (val) => setState(() => _attendance[name] = val),
-            activeThumbColor: AppColors.primary,
-          )),
+          ...widget.teacherClass.students.map((student) {
+            return SwitchListTile(
+              title: Text(student.name),
+              subtitle: Text(student.grade),
+              value: _attendance[student.id] ?? true,
+              onChanged: (val) => setState(() => _attendance[student.id] = val),
+              activeThumbColor: AppColors.primary,
+            );
+          }),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _isSaving ? null : () async {
-                setState(() => _isSaving = true);
-                try {
-                  await ref.read(firestoreServiceProvider).saveAttendance(widget.classId, DateTime.now(), _attendance);
-                  if (context.mounted) Navigator.pop(context);
-                } finally {
-                  if (mounted) setState(() => _isSaving = false);
-                }
-              },
+              onPressed: _isSaving
+                  ? null
+                  : () async {
+                      setState(() => _isSaving = true);
+                      try {
+                        await ref.read(teacherClassRepositoryProvider).saveAttendance(
+                              widget.teacherClass.id,
+                              _attendance,
+                            );
+                        if (context.mounted) Navigator.pop(context);
+                      } finally {
+                        if (mounted) setState(() => _isSaving = false);
+                      }
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: _isSaving 
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : const Text('Save Attendance', style: TextStyle(color: Colors.white)),
+              child: _isSaving
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : const Text('Save Attendance', style: TextStyle(color: Colors.white)),
             ),
           ),
           const SizedBox(height: 24),
@@ -235,18 +298,12 @@ class _AttendanceSheetState extends ConsumerState<_AttendanceSheet> {
 }
 
 class _StudentListSheet extends StatelessWidget {
-  final String className;
-  const _StudentListSheet({required this.className});
+  const _StudentListSheet({required this.teacherClass});
+
+  final TeacherClass teacherClass;
 
   @override
   Widget build(BuildContext context) {
-    final students = [
-      {'name': 'Abebe Kebe', 'avg': '88%', 'attendance': '95%'},
-      {'name': 'Sara Yosef', 'avg': '92%', 'attendance': '100%'},
-      {'name': 'Dawit Tekle', 'avg': '76%', 'attendance': '85%'},
-      {'name': 'Marta Haile', 'avg': '82%', 'attendance': '98%'},
-    ];
-
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -256,26 +313,33 @@ class _StudentListSheet extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Students: $className', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                'Students: ${teacherClass.name}',
+                style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+              ),
               IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
             ],
           ),
           const SizedBox(height: 16),
           ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4),
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.45),
             child: ListView.separated(
-              itemCount: students.length,
-              separatorBuilder: (_, __) => const Divider(),
+              itemCount: teacherClass.students.length,
+              separatorBuilder: (context, index) => const Divider(),
               itemBuilder: (context, index) {
-                final student = students[index];
+                final student = teacherClass.students[index];
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text(student['name']!, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Avg Score: ${student['avg']} • Attendance: ${student['attendance']}', style: AppTextStyles.caption),
+                  title: Text(
+                    student.name,
+                    style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    'Avg Score: ${student.averageScore.toStringAsFixed(0)} • Attendance: ${student.attendanceRate.toStringAsFixed(0)}%',
+                    style: AppTextStyles.caption,
+                  ),
                   trailing: TextButton(
-                    onPressed: () {
-                      _showDetailDialog(context, student);
-                    },
+                    onPressed: () => _showDetailDialog(context, student),
                     child: const Text('View Profile'),
                   ),
                 );
@@ -288,19 +352,22 @@ class _StudentListSheet extends StatelessWidget {
     );
   }
 
-  void _showDetailDialog(BuildContext context, Map<String, String> student) {
+  void _showDetailDialog(BuildContext context, ClassStudent student) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(student['name']!),
+        title: Text(student.name),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _detailItem('Grade', '10'),
-            _detailItem('Average Score', student['avg']!),
-            _detailItem('Attendance Rate', student['attendance']!),
-            _detailItem('Learning Goals', 'Master Trigonometry, Improve Essay Writing'),
+            _detailItem('Grade', student.grade),
+            _detailItem('Average Score', '${student.averageScore.toStringAsFixed(0)}%'),
+            _detailItem('Attendance Rate', '${student.attendanceRate.toStringAsFixed(0)}%'),
+            _detailItem(
+              'Learning Goals',
+              student.learningGoals.isEmpty ? 'No learning goals recorded' : student.learningGoals.join(', '),
+            ),
           ],
         ),
         actions: [
@@ -312,7 +379,7 @@ class _StudentListSheet extends StatelessWidget {
 
   Widget _detailItem(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.only(bottom: 8),
       child: RichText(
         text: TextSpan(
           style: AppTextStyles.bodySmall.copyWith(color: Colors.black),
@@ -326,18 +393,56 @@ class _StudentListSheet extends StatelessWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final String title;
-  final String count;
-  final IconData icon;
-  final Color color;
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.onAddPressed});
 
+  final VoidCallback onAddPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.class_outlined, size: 64, color: AppColors.grey),
+            const SizedBox(height: 16),
+            Text(
+              'No classes found',
+              style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Add class documents under the Firestore `classes` collection with a matching `teacherId`.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey),
+            ),
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: onAddPressed,
+              icon: const Icon(Icons.info_outline),
+              label: const Text('Setup Hint'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
   const _StatCard({
     required this.title,
     required this.count,
     required this.icon,
     required this.color,
   });
+
+  final String title;
+  final String count;
+  final IconData icon;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
