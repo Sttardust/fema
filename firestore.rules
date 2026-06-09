@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() { return request.auth != null; }
+    function isSelf(uid)  { return isSignedIn() && request.auth.uid == uid; }
+
+    // Authoritative role lives in Firebase Auth custom claims, set by the
+    // adminInviteUser Cloud Function or via the bootstrap admin script. The
+    // Firestore users/{uid}.role field is a denormalized copy for the client UI.
+    function claimedRole() { return request.auth.token.role; }
+    function isAdmin()     { return isSignedIn() && claimedRole() == 'admin'; }
+    function isTeacher()   { return isSignedIn() && claimedRole() == 'teacher'; }
+
+    // Roles a client may self-assign during initial profile creation. 'admin'
+    // is intentionally excluded — admins must be promoted server-side.
+    function isSelfAssignableRole(role) {
+      return role in ['student', 'parent', 'teacher'];
+    }
+
+    match /users/{uid} {
+      allow read:   if isSelf(uid) || isAdmin();
+      allow create: if isSelf(uid) && isSelfAssignableRole(request.resource.data.role);
+      // role is immutable after create from the client
+      allow update: if isSelf(uid)
+                    && request.resource.data.role == resource.data.role;
+      allow delete: if isAdmin();
+
+      match /notifications/{nid} {
+        allow read:  if isSelf(uid);
+        allow write: if false; // server-only via Cloud Function
+      }
+    }
+
+    match /courses/{courseId} {
+      allow read: if isSignedIn() &&
+                     (resource.data.status == 'published'
+                      || resource.data.ownerId == request.auth.uid
+                      || isAdmin());
+      allow create: if isTeacher()
+                    && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isSignedIn()
+                            && resource.data.ownerId == request.auth.uid;
+
+      match /lessons/{lessonId} {
+        allow read:  if isSignedIn();
+        allow write: if isSignedIn()
+                     && get(/databases/$(database)/documents/courses/$(courseId)).data.ownerId
+                        == request.auth.uid;
+      }
+    }
+
+    match /classes/{classId} {
+      allow read, update, delete: if isSignedIn()
+                                  && resource.data.teacherId == request.auth.uid;
+      allow create: if isTeacher()
+                    && request.resource.data.teacherId == request.auth.uid;
+
+      match /{sub=**} {
+        allow read, write: if isSignedIn()
+                           && get(/databases/$(database)/documents/classes/$(classId)).data.teacherId
+                              == request.auth.uid;
+      }
+    }
+  }
+}
