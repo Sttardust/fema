@@ -83,30 +83,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
-      if (profile == null) {
-        return location == '/' ? null : '/';
-      }
-
       if (!hasCompletedOnboarding) {
         if (location == '/') return '/onboarding';
         if (isProtectedRoute) return '/onboarding';
         return null;
       }
 
-      if (isTeacherRoute && profile.role != UserRole.teacher) {
+      if (isTeacherRoute && profile!.role != UserRole.teacher) {
         return '/home';
       }
 
-      if (isAdminRoute && profile.role != UserRole.admin) {
+      if (isAdminRoute && profile!.role != UserRole.admin) {
         return '/home';
       }
 
-      if (isParentRoute && profile.role != UserRole.parent) {
+      if (isParentRoute && profile!.role != UserRole.parent) {
         return '/home';
       }
 
       if (location == '/' || isAuthRoute || isOnboardingRoute) {
-        if (profile.role == UserRole.teacher) return '/teacher/home';
+        if (profile!.role == UserRole.teacher) return '/teacher/home';
         return '/home';
       }
 

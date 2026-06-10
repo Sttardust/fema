@@ -62,6 +62,7 @@ flutter:
     - assets/images/Student/Onbording/
     - assets/images/Student/Sign up/
     - assets/images/Student/Student/
+    - assets/images/intro/
     - assets/icons/
 
   # An image asset can refer to one or more resolution-specific "variants", see
