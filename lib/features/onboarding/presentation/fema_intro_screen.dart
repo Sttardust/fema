@@ -19,19 +19,22 @@ class _FemaIntroScreenState extends ConsumerState<FemaIntroScreen> {
 
   final List<OnboardingPage> _pages = [
     OnboardingPage(
-      title: 'Expert Teachers',
-      description: 'Learn from Ethiopia\'s best educators and stay ahead in your learning journey.',
-      imagePath: 'assets/images/Student/Intro Onbording 16.png',
+      title: 'Welcome to FEMA!',
+      description:
+          'A smart way to learn, grow, and shine. Built for Ethiopian students, parents, and educators.',
+      imagePath: 'assets/images/intro/welcome_family.png',
     ),
     OnboardingPage(
-      title: 'High-Quality Video Lessons',
-      description: 'Engage with visually rich, high-quality video content designed for deep understanding.',
-      imagePath: 'assets/images/Student/Intro Onbording 17.png',
+      title: 'Expert Teachers',
+      description:
+          "Learn from Ethiopia's best educators and stay ahead in your learning journey.",
+      imagePath: 'assets/images/intro/expert_teachers.png',
     ),
     OnboardingPage(
       title: 'Academic Success',
-      description: 'Track your progress and achieve excellence with our adaptive learning tools.',
-      imagePath: 'assets/images/Student/Intro Onbording 18.png',
+      description:
+          'Track your progress and achieve excellence with our adaptive learning tools.',
+      imagePath: 'assets/images/intro/academic_success.png',
     ),
   ];
 
@@ -54,7 +57,7 @@ class _FemaIntroScreenState extends ConsumerState<FemaIntroScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: TextButton(
-                  onPressed: () => context.go('/welcome'),
+                  onPressed: () => context.go('/signup'),
                   child: Text(
                     'Skip',
                     style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey),
@@ -140,7 +143,7 @@ class _FemaIntroScreenState extends ConsumerState<FemaIntroScreen> {
                           curve: Curves.easeInOut,
                         );
                       } else {
-                        context.go('/welcome');
+                        context.go('/signup');
                       }
                     },
                   ),

@@ -133,7 +133,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               await ref.read(onboardingProvider.notifier).completeOnboarding();
               if (context.mounted) {
                 Navigator.pop(context);
-                context.push('/onboarding/intro');
+                context.go('/home');
               }
             },
           ),

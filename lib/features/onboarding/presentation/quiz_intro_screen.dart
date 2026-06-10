@@ -46,9 +46,10 @@ class QuizIntroScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppConstants.space16),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 ref.read(onboardingProvider.notifier).setQuizSkipped(true);
-                context.push('/onboarding/intro');
+                await ref.read(onboardingProvider.notifier).completeOnboarding();
+                if (context.mounted) context.go('/home');
               },
               child: Text(
                 'Skip for now',
