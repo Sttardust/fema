@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'firebase_options.dart';
 import 'routes/app_router.dart';
 import 'core/theme/app_colors.dart';
 
@@ -14,7 +15,9 @@ void main() async {
   // Safely initialize Firebase — requires google-services.json in android/app/
   // If missing, the app will still launch but Firebase features will be unavailable.
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     _firebaseInitialized = true;
 
     await FirebaseAppCheck.instance.activate(
