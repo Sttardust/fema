@@ -3,10 +3,47 @@
     "rules": "firestore.rules"
   },
   "emulators": {
-    "auth": { "port": 9099 },
-    "functions": { "port": 5001 },
-    "firestore": { "port": 8080 },
-    "ui": { "enabled": true, "port": 4000 },
+    "auth": {
+      "port": 9099
+    },
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    },
     "singleProjectMode": true
+  },
+  "flutter": {
+    "platforms": {
+      "macos": {
+        "default": {
+          "projectId": "fema-b608b",
+          "appId": "1:441185724649:ios:22a76b939681196c34e878",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "fema-b608b",
+          "configurations": {
+            "android": "1:441185724649:android:cb7bbd032ad79c7534e878",
+            "web": "1:441185724649:web:95068cda2b570b2d34e878"
+          }
+        }
+      },
+      "android": {
+        "default": {
+          "projectId": "fema-b608b",
+          "appId": "1:441185724649:android:cb7bbd032ad79c7534e878",
+          "fileOutput": "android/app/google-services.json"
+        }
+      }
+    }
   }
 }
