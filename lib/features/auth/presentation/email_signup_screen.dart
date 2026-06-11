@@ -34,7 +34,9 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
         );
         
         if (mounted) {
-          context.push('/onboarding/details'); 
+          // After signup, pick role first (matches design); role selection
+          // then routes to the role-specific onboarding step.
+          context.push('/onboarding');
         }
       } catch (e) {
         if (mounted) {
@@ -49,14 +51,7 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sign Up'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/welcome'),
-        ),
-      ),
-      body: SingleChildScrollView(
+      body: SafeArea(child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppConstants.space24),
         child: Form(
           key: _formKey,
@@ -142,7 +137,7 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
                 children: [
                    Text("Already have an account? ", style: AppTextStyles.bodyMedium),
                   TextButton(
-                    onPressed: () => context.push('/login'),
+                    onPressed: () => context.go('/login'),
                     child: Text(
                       'Log In',
                       style: AppTextStyles.bodyMedium.copyWith(
@@ -155,7 +150,7 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
               ),
             ],
           ),
-        ),
+        ),)
       ),
     );
   }

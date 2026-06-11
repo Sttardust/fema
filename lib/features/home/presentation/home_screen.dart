@@ -10,6 +10,7 @@ import '../../library/domain/models.dart';
 import '../../notifications/presentation/notifications_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../profile/domain/user_profile_repository.dart';
+import '../../auth/domain/auth_repository.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -17,15 +18,23 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = ref.watch(homeTabProvider);
+    final isGuest = ref.watch(authStateProvider).asData?.value == null;
 
     return Scaffold(
-      body: IndexedStack(
-        index: currentIndex,
+      body: Column(
         children: [
-          const _StudentHomePage(),
-          const LibraryScreen(),
-          const NotificationsScreen(),
-          const ProfileScreen(),
+          if (isGuest) const _GuestBanner(),
+          Expanded(
+            child: IndexedStack(
+              index: currentIndex,
+              children: const [
+                _StudentHomePage(),
+                LibraryScreen(),
+                NotificationsScreen(),
+                ProfileScreen(),
+              ],
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: Container(
@@ -122,6 +131,54 @@ class _NavBarItem extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GuestBanner extends StatelessWidget {
+  const _GuestBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.primary.withValues(alpha: 0.08),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              const Icon(Icons.info_outline, size: 18, color: AppColors.primary),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  "You're browsing as a guest. Sign up to save your progress.",
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textHeadline,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.go('/signup'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  'Sign Up',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -8,15 +8,36 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.splashBg,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const AppLogo(width: 150),
-            const SizedBox(height: 48),
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.8)),
+          children: const [
+            AppLogo(size: 96),
+            SizedBox(height: 24),
+            Text(
+              'Fema',
+              style: TextStyle(
+                fontSize: 72,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+                letterSpacing: -1.5,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Ignite Curiosity.',
+              style: TextStyle(
+                fontSize: 20,
+                color: AppColors.primary,
+              ),
+            ),
+            Text(
+              'Light the Future.',
+              style: TextStyle(
+                fontSize: 20,
+                color: AppColors.primary,
+              ),
             ),
           ],
         ),

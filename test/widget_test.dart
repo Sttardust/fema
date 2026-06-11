@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fema/features/auth/presentation/welcome_screen.dart';
+import 'package:fema/features/onboarding/presentation/fema_intro_screen.dart';
 
 void main() {
-  testWidgets('welcome screen renders primary actions', (WidgetTester tester) async {
+  testWidgets('intro carousel renders title and primary actions',
+      (WidgetTester tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: WelcomeScreen(),
-      ),
+      const MaterialApp(home: FemaIntroScreen()),
     );
 
-    expect(find.text('Welcome to FEMA'), findsOneWidget);
-    expect(find.text('Get Started'), findsOneWidget);
-    expect(find.byType(TextButton), findsOneWidget);
+    expect(find.text('Welcome to FEMA!'), findsOneWidget);
+    expect(find.text('Sign Up'), findsOneWidget);
+    expect(find.text('Login'), findsOneWidget);
+    expect(find.text('Browse the app'), findsOneWidget);
   });
 }

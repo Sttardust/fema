@@ -47,14 +47,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sign Up'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/welcome'),
-        ),
-      ),
-      body: Padding(
+      body: SafeArea(child: Padding(
         padding: const EdgeInsets.all(AppConstants.space24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -114,7 +107,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
             const SizedBox(height: AppConstants.space32),
           ],
         ),
-      ),
+      )),
     );
   }
 }

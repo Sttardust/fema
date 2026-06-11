@@ -1,36 +1,42 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_button.dart';
 
-class FemaIntroScreen extends ConsumerStatefulWidget {
+/// Entry screen for unauthenticated users. Auto-advancing 3-page carousel
+/// with persistent Sign Up / Login at bottom and a "Browse the app" link
+/// in the top-right that drops the user into guest-mode /home.
+class FemaIntroScreen extends StatefulWidget {
   const FemaIntroScreen({super.key});
 
   @override
-  ConsumerState<FemaIntroScreen> createState() => _FemaIntroScreenState();
+  State<FemaIntroScreen> createState() => _FemaIntroScreenState();
 }
 
-class _FemaIntroScreenState extends ConsumerState<FemaIntroScreen> {
+class _FemaIntroScreenState extends State<FemaIntroScreen> {
+  static const _autoAdvance = Duration(seconds: 4);
+
   final PageController _pageController = PageController();
+  Timer? _timer;
   int _currentPage = 0;
 
-  final List<OnboardingPage> _pages = [
-    OnboardingPage(
+  final List<_IntroPage> _pages = const [
+    _IntroPage(
       title: 'Welcome to FEMA!',
       description:
-          'A smart way to learn, grow, and shine. Built for Ethiopian students, parents, and educators.',
+          'A smart way to learn, grow, and shine.\nBuilt for Ethiopian students, parents, and educators.',
       imagePath: 'assets/images/intro/welcome_family.png',
     ),
-    OnboardingPage(
+    _IntroPage(
       title: 'Expert Teachers',
       description:
           "Learn from Ethiopia's best educators and stay ahead in your learning journey.",
       imagePath: 'assets/images/intro/expert_teachers.png',
     ),
-    OnboardingPage(
+    _IntroPage(
       title: 'Academic Success',
       description:
           'Track your progress and achieve excellence with our adaptive learning tools.',
@@ -39,7 +45,24 @@ class _FemaIntroScreenState extends ConsumerState<FemaIntroScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(_autoAdvance, (_) => _advance());
+  }
+
+  void _advance() {
+    if (!mounted || !_pageController.hasClients) return;
+    final next = (_currentPage + 1) % _pages.length;
+    _pageController.animateToPage(
+      next,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
   void dispose() {
+    _timer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -51,103 +74,81 @@ class _FemaIntroScreenState extends ConsumerState<FemaIntroScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Skip button
             Align(
               alignment: Alignment.topRight,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: TextButton(
-                  onPressed: () => context.go('/signup'),
-                  child: Text(
-                    'Skip',
-                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey),
+                  onPressed: () => context.go('/home'),
+                  child: const Text(
+                    'Browse the app',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ),
             ),
-            
-            // Carousel
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: _pages.length,
-                onPageChanged: (index) => setState(() => _currentPage = index),
-                itemBuilder: (context, index) {
-                  final page = _pages[index];
-                  return Padding(
-                    padding: const EdgeInsets.all(AppConstants.space24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          page.imagePath,
-                          height: 300,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => Container(
-                            height: 300,
-                            color: AppColors.background,
-                            child: const Icon(Icons.school, size: 80, color: AppColors.primary),
-                          ),
-                        ),
-                        const SizedBox(height: 48),
-                        Text(
-                          page.title,
-                          style: AppTextStyles.headlineMedium.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          page.description,
-                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                onPageChanged: (i) => setState(() => _currentPage = i),
+                itemBuilder: (context, index) => _pages[index],
               ),
             ),
-            
-            // Bottom section
             Padding(
-              padding: const EdgeInsets.all(AppConstants.space24),
+              padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24),
               child: Column(
                 children: [
-                  // Page indicator
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      _pages.length,
-                      (index) => Container(
+                    children: List.generate(_pages.length, (i) {
+                      final active = _currentPage == i;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
                         margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: _currentPage == index ? 24 : 8,
+                        width: active ? 22 : 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: _currentPage == index ? AppColors.primary : AppColors.greyLight,
+                          color: active
+                              ? AppColors.primary
+                              : AppColors.primaryLight.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(4),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 24),
+                  AppButton(
+                    text: 'Sign Up',
+                    onPressed: () => context.go('/signup'),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => context.go('/login'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: const BorderSide(color: AppColors.greyLight),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'Login',
+                        style: TextStyle(
+                          color: AppColors.textHeadline,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 40),
-                  
-                  // Next / Get Started button
-                  AppButton(
-                    text: _currentPage == _pages.length - 1 ? 'Get Started' : 'Next',
-                    onPressed: () {
-                      if (_currentPage < _pages.length - 1) {
-                        _pageController.nextPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      } else {
-                        context.go('/signup');
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -158,14 +159,51 @@ class _FemaIntroScreenState extends ConsumerState<FemaIntroScreen> {
   }
 }
 
-class OnboardingPage {
+class _IntroPage extends StatelessWidget {
   final String title;
   final String description;
   final String imagePath;
 
-  OnboardingPage({
+  const _IntroPage({
     required this.title,
     required this.description,
     required this.imagePath,
   });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24),
+      child: Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: Image.asset(imagePath, fit: BoxFit.contain),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textHeadline,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            description,
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1.4,
+              color: AppColors.grey,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
 }

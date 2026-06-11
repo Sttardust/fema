@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Primary colors (aligned with Figma High-Fi V1)
-  static const Color primary = Color(0xFF673AB7);
-  static const Color primaryLight = Color(0xFF9575CD);
-  static const Color primaryDark = Color(0xFF4527A0);
+  // Primary — brand violet from the FEMA Figma palette.
+  static const Color primary = Color(0xFF6F28F4);
+  static const Color primaryLight = Color(0xFFB28BF9);
+  static const Color primaryDark = Color(0xFF4E1BB0);
+
+  // Selection state used on the role cards, onboarding pills, etc.
+  static const Color selectionFill = Color(0xFFD7F5E1); // mint
+  static const Color selectionBorder = primary;
 
   // Secondary/Accent colors
   static const Color secondary = Color(0xFFFF7A59); // Salmon used in quiz
@@ -12,6 +16,7 @@ class AppColors {
   static const Color childrenModeBg = Color(0xFFE0F7F9); // Soft teal for children's mode
 
   // Neutral colors
+  static const Color splashBg = Color(0xFFEEEEEE); // Splash + simple-canvas screens
   static const Color background = Color(0xFFF8F9FB);
   static const Color surface = Colors.white;
   static const Color textBody = Color(0xFF2D3142);
