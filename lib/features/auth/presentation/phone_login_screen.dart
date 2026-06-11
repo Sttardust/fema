@@ -45,14 +45,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Phone Log In'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/welcome'),
-        ),
-      ),
-      body: SingleChildScrollView(
+      body: SafeArea(child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppConstants.space24),
         child: Form(
           key: _formKey,
@@ -100,7 +93,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
               ),
             ],
           ),
-        ),
+        ),)
       ),
     );
   }

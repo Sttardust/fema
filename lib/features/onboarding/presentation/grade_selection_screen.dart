@@ -55,7 +55,7 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              context.go('/welcome');
+              context.go('/onboarding/intro');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,

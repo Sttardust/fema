@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/auth/domain/auth_repository.dart';
 import '../features/auth/presentation/splash_screen.dart';
-import '../features/auth/presentation/welcome_screen.dart';
 import '../features/auth/presentation/email_signup_screen.dart';
 import '../features/auth/presentation/email_login_screen.dart';
 import '../features/auth/presentation/phone_signup_screen.dart';
@@ -54,21 +53,26 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     redirect: (context, state) {
       final location = state.matchedLocation;
-      final isAuthRoute = location == '/welcome' ||
+      final isAuthRoute = 
           location == '/login' ||
           location == '/signup' ||
           location == '/signup-phone' ||
           location == '/login-phone' ||
           location == '/otp';
       final isOnboardingRoute = location.startsWith('/onboarding');
-      final isProtectedRoute = location == '/home' ||
+      // Routes accessible to anyone (incl. guest mode browse). For these,
+      // unauth users are allowed but UI may show signup CTAs.
+      final isGuestBrowsable = location == '/home' ||
           location.startsWith('/home/') ||
           location == '/library' ||
-          location.startsWith('/library/') ||
-          location == '/profile' ||
+          location.startsWith('/library/');
+      // Routes that require auth: profile + role-specific surfaces. Unauth
+      // users hitting these get bounced to the intro carousel.
+      final isStrictlyProtected = location == '/profile' ||
           location.startsWith('/teacher/') ||
           location.startsWith('/admin/') ||
           location.startsWith('/parent/');
+      final isProtectedRoute = isGuestBrowsable || isStrictlyProtected;
       final isTeacherRoute = location.startsWith('/teacher/');
       final isAdminRoute = location.startsWith('/admin/');
       final isParentRoute = location.startsWith('/parent/');
@@ -78,8 +82,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (user == null) {
-        if (location == '/') return '/welcome';
-        if (isProtectedRoute) return '/welcome';
+        if (location == '/') return '/onboarding/intro';
+        // guest mode: unauth users can browse /home + /library; only role-gated routes are protected
+        if (isStrictlyProtected) return '/onboarding/intro';
         return null;
       }
 
@@ -114,10 +119,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
-        path: '/welcome',
-        builder: (context, state) => const WelcomeScreen(),
-      ),
-      GoRoute(
         path: '/login',
         builder: (context, state) => const EmailLoginScreen(),
       ),
@@ -141,7 +142,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           final redirectPath = args['redirectPath'] as String? ?? '/';
 
           if (verificationId == null) {
-            return const WelcomeScreen();
+            return const FemaIntroScreen();
           }
 
           return OtpScreen(

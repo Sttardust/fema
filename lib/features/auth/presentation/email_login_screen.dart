@@ -43,14 +43,7 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Log In'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/welcome'),
-        ),
-      ),
-      body: SingleChildScrollView(
+      body: SafeArea(child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppConstants.space24),
         child: Form(
           key: _formKey,
@@ -131,7 +124,7 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                 children: [
                   Text("Don't have an account? ", style: AppTextStyles.bodyMedium),
                   TextButton(
-                    onPressed: () => context.push('/signup'),
+                    onPressed: () => context.go('/signup'),
                     child: Text(
                       'Sign Up',
                       style: AppTextStyles.bodyMedium.copyWith(
@@ -165,7 +158,7 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
               ),
             ],
           ),
-        ),
+        ),)
       ),
     );
   }

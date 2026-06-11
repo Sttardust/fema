@@ -3,83 +3,115 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_logo.dart';
 import '../domain/onboarding_provider.dart';
 
-class RoleSelectionScreen extends ConsumerWidget {
+class RoleSelectionScreen extends ConsumerStatefulWidget {
   const RoleSelectionScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RoleSelectionScreen> createState() =>
+      _RoleSelectionScreenState();
+}
+
+class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
+  UserRole? _selected;
+
+  void _onContinue() {
+    final picked = _selected;
+    if (picked == null) return;
+    ref.read(onboardingProvider.notifier).setRole(picked);
+
+    switch (picked) {
+      case UserRole.student:
+        context.push('/onboarding/grade');
+        break;
+      case UserRole.parent:
+        ref.read(onboardingProvider.notifier).updateActiveChild(ChildProfile());
+        context.push('/onboarding/parent-details');
+        break;
+      case UserRole.teacher:
+        context.push('/onboarding/teacher-intro');
+        break;
+      case UserRole.admin:
+      case UserRole.none:
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        actions: [
-          TextButton.icon(
-            onPressed: () {
-              // TODO: Implement language toggle
-            },
-            icon: const Icon(Icons.language, size: 20),
-            label: const Text('EN/AM'),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const AppLogoLockup(),
+                  const Spacer(),
+                  _LanguagePill(),
+                ],
+              ),
+              const SizedBox(height: 56),
+              const Text(
+                "Who's using FEMA today?",
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textHeadline,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Select your role to personalize your learning experience.',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: AppColors.grey,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 36),
+              _RoleCard(
+                label: 'I am a Student',
+                role: UserRole.student,
+                selected: _selected == UserRole.student,
+                onTap: () => setState(() => _selected = UserRole.student),
+              ),
+              const SizedBox(height: 14),
+              _RoleCard(
+                label: 'I am a Parent',
+                role: UserRole.parent,
+                selected: _selected == UserRole.parent,
+                onTap: () => setState(() => _selected = UserRole.parent),
+              ),
+              const SizedBox(height: 14),
+              _RoleCard(
+                // Visual: "Educator/Admin" per design. Functional: maps to
+                // teacher. Admin accounts are provisioned server-side via
+                // Cloud Function (not yet built) — they don't self-signup.
+                label: 'I am an Educator/Admin',
+                role: UserRole.teacher,
+                selected: _selected == UserRole.teacher,
+                onTap: () => setState(() => _selected = UserRole.teacher),
+              ),
+              const Spacer(),
+              AppButton(
+                text: 'Continue',
+                onPressed: _selected == null ? null : _onContinue,
+                backgroundColor:
+                    _selected == null ? AppColors.greyLight : AppColors.primary,
+              ),
+              const SizedBox(height: 16),
+            ],
           ),
-          const SizedBox(width: AppConstants.space16),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24),
-        child: Column(
-          children: [
-            const SizedBox(height: AppConstants.space24),
-            Text(
-              "Who's Using FEMA?",
-              style: AppTextStyles.headlineLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppConstants.space32),
-            _RoleCard(
-              title: "I'm a Student",
-              subtitle: "Looking for engaging lessons and quizzes.",
-              icon: Icons.school_outlined,
-              role: UserRole.student,
-              onTap: () {
-                ref.read(onboardingProvider.notifier).setRole(UserRole.student);
-                context.push('/onboarding/grade');
-              },
-            ),
-            const SizedBox(height: AppConstants.space16),
-            _RoleCard(
-              title: "I'm a Parent",
-              subtitle: "To monitor and support my child's progress.",
-              icon: Icons.family_restroom_outlined,
-              role: UserRole.parent,
-              onTap: () {
-                ref.read(onboardingProvider.notifier).setRole(UserRole.parent);
-                ref.read(onboardingProvider.notifier).updateActiveChild(ChildProfile());
-                context.push('/onboarding/parent-details');
-              },
-            ),
-            const SizedBox(height: AppConstants.space16),
-            _RoleCard(
-              title: "I'm a Teacher",
-              subtitle: "For creating courses and managing student progress.",
-              icon: Icons.school_outlined,
-              role: UserRole.teacher,
-              onTap: () {
-                ref.read(onboardingProvider.notifier).setRole(UserRole.teacher);
-                context.push('/onboarding/teacher-intro');
-              },
-            ),
-            const SizedBox(height: AppConstants.space16),
-            _RoleCard(
-              title: "I'm an Admin",
-              subtitle: "For managing the system and inviting staff.",
-              icon: Icons.admin_panel_settings_outlined,
-              role: UserRole.admin,
-              onTap: () {
-                ref.read(onboardingProvider.notifier).setRole(UserRole.admin);
-                context.push('/onboarding/admin-user-creation');
-              },
-            ),
-          ],
         ),
       ),
     );
@@ -87,17 +119,15 @@ class RoleSelectionScreen extends ConsumerWidget {
 }
 
 class _RoleCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
+  final String label;
   final UserRole role;
+  final bool selected;
   final VoidCallback onTap;
 
   const _RoleCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
+    required this.label,
     required this.role,
+    required this.selected,
     required this.onTap,
   });
 
@@ -105,51 +135,83 @@ class _RoleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppConstants.radius16),
-      child: Container(
-        padding: const EdgeInsets.all(AppConstants.space20),
+      borderRadius: BorderRadius.circular(18),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppConstants.radius16),
-          border: Border.all(color: AppColors.greyLight),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: selected ? AppColors.selectionFill : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.greyLight,
+            width: selected ? 1.5 : 1,
+          ),
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(AppConstants.space12),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: AppColors.primary, size: 28),
-            ),
-            const SizedBox(width: AppConstants.space20),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: AppConstants.space4),
-                  Text(
-                    subtitle,
-                    style: AppTextStyles.caption,
-                  ),
-                ],
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textHeadline,
+                ),
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.grey),
+            _RadioDot(selected: selected),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _RadioDot extends StatelessWidget {
+  final bool selected;
+  const _RadioDot({required this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 26,
+      height: 26,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: selected ? AppColors.primary : AppColors.greyLight,
+          width: selected ? 6 : 2,
+        ),
+        color: Colors.white,
+      ),
+    );
+  }
+}
+
+class _LanguagePill extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.greyLight),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.translate, size: 16, color: AppColors.textHeadline),
+          SizedBox(width: 6),
+          Text(
+            'English',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textHeadline,
+            ),
+          ),
+        ],
       ),
     );
   }

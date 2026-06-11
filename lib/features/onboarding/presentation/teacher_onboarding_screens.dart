@@ -71,7 +71,7 @@ class _TeacherIntroCarouselScreenState extends State<TeacherIntroCarouselScreen>
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: TextButton(
-                  onPressed: () => context.go('/welcome'),
+                  onPressed: () => context.go('/onboarding/intro'),
                   child: Text('Skip', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey)),
                 ),
               ),
@@ -152,7 +152,7 @@ class _TeacherIntroCarouselScreenState extends State<TeacherIntroCarouselScreen>
                           curve: Curves.easeInOut,
                         );
                       } else {
-                        context.go('/welcome');
+                        context.go('/onboarding/intro');
                       }
                     },
                   ),
