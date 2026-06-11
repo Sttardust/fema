@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../auth/domain/auth_repository.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/app_logo.dart';
 import '../domain/user_profile.dart';
 import '../domain/user_profile_repository.dart';
 
@@ -16,480 +16,240 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
-          'Profile',
-          style: AppTextStyles.headlineSmall.copyWith(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
       body: profileAsync.when(
         data: (profile) {
           if (profile == null) {
-            return const Center(child: Text('Profile not found'));
+            return const _ProfileGuestView();
           }
-
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                const SizedBox(height: 8),
-                _buildProfileHeader(profile),
-                const SizedBox(height: 32),
-                _buildSettingsGroup(
-                  context,
-                  title: 'Account',
-                  items: [
-                    _SettingsItem(
-                      icon: Icons.person_outline,
-                      label: 'Personal Details',
-                      onTap: () => _showPersonalDetailsSheet(context, profile),
-                    ),
-                    _SettingsItem(
-                      icon: Icons.security_outlined,
-                      label: 'Security',
-                      onTap: () => _showChangePasswordSheet(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _buildSettingsGroup(
-                  context,
-                  title: 'Preferences',
-                  items: [
-                    _SettingsItem(
-                      icon: Icons.notifications_outlined,
-                      label: 'Notifications',
-                      trailing: _buildSwitch(true),
-                      onTap: () {},
-                    ),
-                    _SettingsItem(
-                      icon: Icons.language_outlined,
-                      label: 'Language',
-                      trailingText: 'English',
-                      onTap: () {},
-                    ),
-                    _SettingsItem(
-                      icon: Icons.dark_mode_outlined,
-                      label: 'Dark Mode',
-                      trailing: _buildSwitch(false),
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _buildSettingsGroup(
-                  context,
-                  title: 'Support',
-                  items: [
-                    _SettingsItem(
-                      icon: Icons.help_outline,
-                      label: 'Help & Support',
-                      onTap: () {},
-                    ),
-                    _SettingsItem(
-                      icon: Icons.info_outline,
-                      label: 'About',
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-                _buildLogoutButton(context, ref),
-                const SizedBox(height: 16),
-                _buildDeleteAccountButton(context),
-                const SizedBox(height: 40),
-              ],
-            ),
-          );
+          return _ProfileBody(profile: profile);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error loading profile: $error')),
+        error: (e, _) => Center(child: Text('Error loading profile: $e')),
       ),
     );
   }
+}
 
-  Widget _buildSwitch(bool value) {
-    return Switch(
-      value: value,
-      onChanged: (v) {},
-      activeThumbColor: AppColors.primary,
+class _ProfileGuestView extends StatelessWidget {
+  const _ProfileGuestView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const _PurpleHeader(title: 'Profile'),
+        const SizedBox(height: 80),
+        const Icon(Icons.person_outline, size: 64, color: AppColors.grey),
+        const SizedBox(height: 16),
+        const Text(
+          "You're browsing as a guest.",
+          style: TextStyle(fontSize: 16, color: AppColors.textHeadline),
+        ),
+        const SizedBox(height: 8),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 32),
+          child: Text(
+            'Create an account to track your progress and save lessons.',
+            style: TextStyle(fontSize: 14, color: AppColors.grey, height: 1.4),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: 220,
+          child: ElevatedButton(
+            onPressed: () => context.go('/signup'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 0,
+            ),
+            child: const Text('Sign Up',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ),
+      ],
     );
   }
+}
 
-  Widget _buildProfileHeader(AppUserProfile profile) {
-    final initials = (profile.firstName?.isNotEmpty == true ? profile.firstName![0] : '') +
-        (profile.surName?.isNotEmpty == true ? profile.surName![0] : '');
+class _ProfileBody extends ConsumerWidget {
+  final AppUserProfile profile;
+  const _ProfileBody({required this.profile});
 
-    return Center(
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SingleChildScrollView(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: 88,
-            height: 88,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.primaryLight],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Text(
-                initials.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 30,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+          const _PurpleHeader(title: 'Profile Settings'),
+          const SizedBox(height: 32),
+          Center(child: _Avatar(profile: profile)),
+          const SizedBox(height: 36),
+          _SectionHeader(
+            title: 'Personal Information',
+            trailing: const Icon(Icons.edit_outlined, size: 18, color: AppColors.textHeadline),
+            onTrailingTap: () {},
           ),
-          const SizedBox(height: 14),
-          Text(
-            profile.fullName,
-            style: AppTextStyles.headlineSmall.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              profile.role.name.toUpperCase(),
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSettingsGroup(BuildContext context, {required String title, required List<_SettingsItem> items}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.grey,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-          ),
+          _ReadOnlyRow(label: 'Full Name', value: profile.fullName),
           const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              children: items.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-                return Column(
-                  children: [
-                    InkWell(
-                      onTap: item.onTap,
-                      borderRadius: BorderRadius.circular(14),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        child: Row(
-                          children: [
-                            Icon(item.icon, color: AppColors.primary, size: 22),
-                            const SizedBox(width: 14),
-                            Text(
-                              item.label,
-                              style: AppTextStyles.bodyMedium,
-                            ),
-                            const Spacer(),
-                            if (item.trailing != null) item.trailing!,
-                            if (item.trailingText != null)
-                              Text(
-                                item.trailingText!,
-                                style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey),
-                              ),
-                            if (item.trailing == null && item.trailingText == null)
-                              const Icon(Icons.chevron_right, color: AppColors.grey, size: 20),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (index < items.length - 1)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Divider(height: 1, color: AppColors.greyLight.withValues(alpha: 0.5)),
-                      ),
-                  ],
-                );
-              }).toList(),
+          _ReadOnlyRow(label: 'Email', value: profile.email ?? '—'),
+          const SizedBox(height: 8),
+          _ReadOnlyRow(label: 'Phone Number', value: profile.phone ?? '—'),
+          const SizedBox(height: 28),
+          _SectionHeader(title: 'Security'),
+          _NavRow(label: 'Change Password', onTap: () => _showChangePasswordSheet(context, ref)),
+          const SizedBox(height: 8),
+          _NavRow(label: 'Account Management', onTap: () => context.push('/profile/account-management')),
+          const SizedBox(height: 8),
+          _NavRow(label: 'Subscription', onTap: () => _comingSoon(context, 'Subscription')),
+          const SizedBox(height: 28),
+          _SectionHeader(title: 'Notifications'),
+          _ToggleRow(
+            label: 'Notifications',
+            value: true,
+            onChanged: (v) {},
+          ),
+          const SizedBox(height: 28),
+          _SectionHeader(title: 'Help and Support'),
+          _NavRow(label: 'About Us', onTap: () => context.push('/profile/about')),
+          const SizedBox(height: 8),
+          _NavRow(label: 'Help', onTap: () => _comingSoon(context, 'Help')),
+          const SizedBox(height: 8),
+          _NavRow(label: 'Share the FEMA App', onTap: () => _comingSoon(context, 'Share')),
+          const SizedBox(height: 32),
+          Center(
+            child: TextButton(
+              onPressed: () => _signOut(context, ref),
+              child: const Text(
+                'Sign out',
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
             ),
           ),
+          const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  Widget _buildLogoutButton(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: SizedBox(
-        width: double.infinity,
-        height: 50,
-        child: OutlinedButton(
-          onPressed: () async {
-            await ref.read(authRepositoryProvider).signOut();
-            if (!context.mounted) return;
-            context.go('/');
-          },
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.error,
-            side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: const Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
-        ),
-      ),
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    await ref.read(authRepositoryProvider).signOut();
+    if (!context.mounted) return;
+    context.go('/');
+  }
+
+  void _comingSoon(BuildContext context, String label) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$label is coming soon')),
     );
   }
 
-  Widget _buildDeleteAccountButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: TextButton(
-        onPressed: () => _showDeleteAccountDialog(context),
-        child: Text(
-          'Delete Account',
-          style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
+  Future<void> _showChangePasswordSheet(BuildContext context, WidgetRef ref) async {
+    final email = profile.email;
+    if (email == null || email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No email on file — contact support')),
+      );
+      return;
+    }
+    try {
+      await ref.read(authRepositoryProvider).sendPasswordResetEmail(email);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Password reset email sent to $email')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not send reset email: $e')),
+      );
+    }
+  }
+}
+
+class _PurpleHeader extends StatelessWidget {
+  final String title;
+  const _PurpleHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
         ),
       ),
-    );
-  }
-
-  void _showPersonalDetailsSheet(BuildContext context, AppUserProfile profile) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.9,
-        minChildSize: 0.5,
-        expand: false,
-        builder: (context, scrollController) => SingleChildScrollView(
-          controller: scrollController,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+          child: Row(
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.greyLight,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
+              const AppLogoLockup(color: Colors.white),
+              const Spacer(),
               Text(
-                'Personal Details',
-                style: AppTextStyles.headlineSmall.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 24),
-              _buildDetailField('First Name', profile.firstName ?? 'Not provided'),
-              _buildDetailField('Sur Name', profile.surName ?? 'Not provided'),
-              _buildDetailField('Email', profile.email ?? 'Not provided'),
-              _buildDetailField('Phone', profile.phone ?? 'Not provided'),
-              _buildDetailField('Gender', profile.gender ?? 'Not provided'),
-              if (profile.school != null) _buildDetailField('School', profile.school!),
-              if (profile.grade != null) _buildDetailField('Grade', profile.grade!),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
-                  ),
-                  child: const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.bold)),
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
+              const Spacer(),
+              const Icon(Icons.search, color: Colors.white, size: 24),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildDetailField(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+class _Avatar extends StatelessWidget {
+  final AppUserProfile profile;
+  const _Avatar({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 116,
+      height: 116,
+      child: Stack(
         children: [
-          Text(label, style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w500)),
-          const SizedBox(height: 8),
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            width: 116,
+            height: 116,
             decoration: BoxDecoration(
               color: AppColors.background,
-              borderRadius: BorderRadius.circular(10),
+              shape: BoxShape.circle,
               border: Border.all(color: AppColors.greyLight),
             ),
-            child: Text(value, style: AppTextStyles.bodyMedium),
+            child: const Icon(Icons.person, size: 64, color: AppColors.accent),
           ),
-        ],
-      ),
-    );
-  }
-
-  void _showChangePasswordSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 24,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.greyLight,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+          Positioned(
+            right: 4,
+            bottom: 4,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.greyLight),
               ),
+              child: const Icon(Icons.edit_outlined,
+                  size: 18, color: AppColors.textHeadline),
             ),
-            const SizedBox(height: 20),
-            Text(
-              'Change Password',
-              style: AppTextStyles.headlineSmall.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 24),
-            _buildPasswordField('Current Password'),
-            const SizedBox(height: 16),
-            _buildPasswordField('New Password'),
-            const SizedBox(height: 16),
-            _buildPasswordField('Confirm New Password'),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-                child: const Text('Update Password', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPasswordField(String label) {
-    return TextField(
-      obscureText: true,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.grey),
-        filled: true,
-        fillColor: AppColors.background,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: AppColors.greyLight),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: AppColors.greyLight),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: AppColors.primary),
-        ),
-        suffixIcon: const Icon(Icons.visibility_off_outlined, color: AppColors.grey, size: 20),
-      ),
-    );
-  }
-
-  void _showDeleteAccountDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Delete Account',
-          style: AppTextStyles.headlineSmall.copyWith(fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'Are you sure you want to permanently delete your account? This action cannot be undone.',
-          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.grey, fontWeight: FontWeight.w600),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.go('/');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              elevation: 0,
-            ),
-            child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -497,18 +257,149 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-class _SettingsItem {
-  final IconData icon;
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final Widget? trailing;
+  final VoidCallback? onTrailingTap;
+  const _SectionHeader({required this.title, this.trailing, this.onTrailingTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textHeadline,
+            ),
+          ),
+          const Spacer(),
+          if (trailing != null)
+            GestureDetector(onTap: onTrailingTap, child: trailing!),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReadOnlyRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _ReadOnlyRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(color: AppColors.grey, fontSize: 14),
+              ),
+            ),
+            Text(
+              value,
+              style: const TextStyle(
+                color: AppColors.textHeadline,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NavRow extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
-  final Widget? trailing;
-  final String? trailingText;
+  const _NavRow({required this.label, required this.onTap});
 
-  const _SettingsItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.trailing,
-    this.trailingText,
-  });
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.textHeadline,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.grey, size: 22),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ToggleRow extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  const _ToggleRow({required this.label, required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.textHeadline,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeThumbColor: Colors.white,
+              activeTrackColor: AppColors.primary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
