@@ -32,6 +32,8 @@ import '../features/library/presentation/library_screen.dart';
 import '../features/library/presentation/course_details_screen.dart';
 import '../features/library/presentation/video_player_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
+import '../features/profile/presentation/account_management_screen.dart';
+import '../features/profile/presentation/about_us_screen.dart';
 import '../features/home/presentation/management_placeholder_screen.dart';
 import '../features/parent/presentation/child_security_screen.dart';
 import '../features/teacher/presentation/class_management_screen.dart';
@@ -260,6 +262,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
+        routes: [
+          GoRoute(
+            path: 'account-management',
+            builder: (context, state) => const AccountManagementScreen(),
+          ),
+          GoRoute(
+            path: 'about',
+            builder: (context, state) => const AboutUsScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: '/teacher/home',
