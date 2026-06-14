@@ -9,8 +9,8 @@ import '../../library/domain/library_provider.dart';
 import '../../library/domain/models.dart';
 import '../../notifications/presentation/notifications_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
-import '../../profile/domain/user_profile_repository.dart';
 import '../../auth/domain/auth_repository.dart';
+import '../../../core/widgets/app_logo.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -190,93 +190,21 @@ class _StudentHomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(currentUserProfileProvider).asData?.value;
     final coursesAsync = ref.watch(coursesProvider);
-    final firstName = profile?.firstName ?? 'Student';
 
-    return SafeArea(
-      child: CustomScrollView(
-        slivers: [
-          // Top bar with greeting and language
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Row(
-                children: [
-                  // Logo
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.diamond, color: Colors.white, size: 20),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'FEMA',
-                    style: AppTextStyles.headlineSmall.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.greyLight),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Hi, $firstName',
-                        style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(width: 10),
-                      const Icon(Icons.language, size: 16, color: AppColors.grey),
-                      const SizedBox(width: 4),
-                      Text(
-                        'English',
-                        style: AppTextStyles.caption,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+    return CustomScrollView(
+      slivers: [
+        // Purple header: FEMA lockup + search field
+        SliverToBoxAdapter(
+          child: _HomePurpleHeader(
+            onSearchTap: () => context.push('/home/search'),
           ),
+        ),
 
-          // Search bar
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: GestureDetector(
-                onTap: () => context.push('/home/search'),
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.greyLight),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 14),
-                      const Icon(Icons.search, color: AppColors.grey, size: 22),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Search for courses...',
-                        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
+        // Filter chips
+        SliverToBoxAdapter(
+          child: _FilterChipsRow(),
+        ),
 
           // Recommended Courses section
           SliverToBoxAdapter(
@@ -382,9 +310,8 @@ class _StudentHomePage extends ConsumerWidget {
             ),
           ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 20)),
-        ],
-      ),
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+      ],
     );
   }
 
@@ -516,6 +443,121 @@ class _CourseCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _HomePurpleHeader extends StatelessWidget {
+  final VoidCallback onSearchTap;
+  const _HomePurpleHeader({required this.onSearchTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: const [
+                  AppLogoLockup(color: Colors.white),
+                  Spacer(),
+                  Icon(Icons.notifications_none,
+                      color: Colors.white, size: 26),
+                ],
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: onSearchTap,
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  height: 48,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search, color: AppColors.grey, size: 22),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Search for courses',
+                          style: TextStyle(
+                            color: AppColors.grey,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.tune, color: AppColors.grey, size: 22),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterChipsRow extends StatefulWidget {
+  @override
+  State<_FilterChipsRow> createState() => _FilterChipsRowState();
+}
+
+class _FilterChipsRowState extends State<_FilterChipsRow> {
+  static const _filters = ['All', 'Recommended', 'Tutorials', 'By Grade', 'By Subject'];
+  int _selected = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+        itemCount: _filters.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final active = _selected == i;
+          return GestureDetector(
+            onTap: () => setState(() => _selected = i),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: active ? AppColors.primary : Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: active ? AppColors.primary : AppColors.greyLight,
+                ),
+              ),
+              child: Text(
+                _filters[i],
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: active ? Colors.white : AppColors.textHeadline,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
