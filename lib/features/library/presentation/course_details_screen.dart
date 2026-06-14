@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/constants/app_constants.dart';
 import '../domain/library_provider.dart';
 import '../domain/models.dart';
 
+/// Single course view — Overview + Curriculum tabs, with an Enroll CTA
+/// pinned to the bottom. Matches the Figma "Single course view" frames.
 class CourseDetailsScreen extends ConsumerStatefulWidget {
   const CourseDetailsScreen({super.key});
 
   @override
-  ConsumerState<CourseDetailsScreen> createState() => _CourseDetailsScreenState();
+  ConsumerState<CourseDetailsScreen> createState() =>
+      _CourseDetailsScreenState();
 }
 
 class _CourseDetailsScreenState extends ConsumerState<CourseDetailsScreen>
@@ -33,151 +34,139 @@ class _CourseDetailsScreenState extends ConsumerState<CourseDetailsScreen>
   @override
   Widget build(BuildContext context) {
     final course = ref.watch(selectedCourseProvider);
-
     if (course == null) {
       return const Scaffold(body: Center(child: Text('No course selected')));
     }
 
     return Scaffold(
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          _buildSliverAppBar(context, course),
-          SliverToBoxAdapter(
-            child: Container(
-              color: Colors.white,
-              child: TabBar(
-                controller: _tabController,
-                labelColor: AppColors.primary,
-                unselectedLabelColor: AppColors.grey,
-                indicatorColor: AppColors.primary,
-                indicatorWeight: 3,
-                labelStyle: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-                unselectedLabelStyle: AppTextStyles.bodyMedium,
-                tabs: const [
-                  Tab(text: 'Overview'),
-                  Tab(text: 'Curriculum'),
-                ],
-              ),
-            ),
-          ),
-        ],
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            _OverviewTab(course: course),
-            _CurriculumTab(course: course),
-          ],
-        ),
-      ),
-      bottomNavigationBar: _buildEnrollBar(context),
-    );
-  }
-
-  Widget _buildSliverAppBar(BuildContext context, Course course) {
-    return SliverAppBar(
-      expandedHeight: 220,
-      pinned: true,
-      backgroundColor: AppColors.primaryDark,
-      leading: IconButton(
-        icon: Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.3),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
-        ),
-        onPressed: () => context.pop(),
-      ),
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.network(
-              course.thumbnailUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: AppColors.primaryDark,
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        course.grade.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.amber,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        course.subject.name.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ],
+      backgroundColor: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: Container(
+          color: AppColors.primary,
+          child: SafeArea(
+            bottom: false,
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => context.pop(),
+                ),
+                Text(
+                  '${course.grade} ${_subjectLabel(course.subject)}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ),
+              ],
             ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.4),
-                  ],
-                ),
-              ),
-            ),
-            // Play button
-            const Center(
-              child: Icon(Icons.play_circle_fill, color: Colors.white, size: 56),
-            ),
-          ],
+          ),
         ),
+      ),
+      body: Column(
+        children: [
+          _Hero(course: course),
+          TabBar(
+            controller: _tabController,
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.grey,
+            indicatorColor: AppColors.primary,
+            indicatorWeight: 3,
+            indicatorSize: TabBarIndicatorSize.label,
+            labelStyle:
+                const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            unselectedLabelStyle:
+                const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+            tabs: const [
+              Tab(text: 'Overview'),
+              Tab(text: 'Curriculum'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _OverviewTab(course: course),
+                _CurriculumTab(course: course),
+              ],
+            ),
+          ),
+          _EnrollFooter(
+            onEnroll: () => _enroll(context, course),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildEnrollBar(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: () {
-              // TODO: Enroll logic
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
-            ),
-            child: const Text(
-              'Enroll',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+  String _subjectLabel(CourseSubject s) {
+    final n = s.name;
+    return n[0].toUpperCase() + n.substring(1);
+  }
+
+  void _enroll(BuildContext context, Course course) {
+    final first = course.lessons.isNotEmpty ? course.lessons.first : null;
+    if (first == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This course has no lessons yet.')),
+      );
+      return;
+    }
+    ref.read(selectedLessonProvider.notifier).state = first;
+    context.push('/library/video-player');
+  }
+}
+
+class _Hero extends StatelessWidget {
+  final Course course;
+  const _Hero({required this.course});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 180,
+      color: const Color(0xFF1A1A2E),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(course.grade.toUpperCase(),
+                    style: const TextStyle(
+                        color: Colors.amber,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                Text(course.subject.name.toUpperCase(),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 36,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.bold)),
+              ],
             ),
           ),
-        ),
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white30, width: 2),
+            ),
+            child: const Icon(Icons.play_arrow, color: Colors.white, size: 32),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ─── Overview Tab ─────────────────────────────────────────────────────────────
+// ─── Overview tab ─────────────────────────────────────────────────────────────
 
 class _OverviewTab extends StatelessWidget {
   final Course course;
@@ -185,334 +174,302 @@ class _OverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final videos = course.lessons.where((l) => l.videoUrl != null).length;
+    final articles = course.lessons
+        .where((l) => l.videoUrl == null && l.contentHtml != null)
+        .length;
+    final totalMins =
+        course.lessons.fold<int>(0, (sum, l) => sum + l.durationMinutes);
+    final hours = (totalMins / 60).round();
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // About the course
-          Text(
+          const Text(
             'About the course',
-            style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            course.description.isNotEmpty
-                ? course.description
-                : 'Welcome to the ${course.title} course! In this exciting journey, we will explore the fundamental principles of ${course.subject.name} that govern the world around us. From understanding motion and forces to discovering the wonders of energy and matter, this course is designed to spark your curiosity and deepen your knowledge. Get ready to engage with hands-on experiments and real-life applications that make learning ${course.subject.name} fun and relevant!',
-            style: AppTextStyles.bodyMedium.copyWith(
-              height: 1.6,
-              color: AppColors.textBody,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textHeadline,
             ),
           ),
-          const SizedBox(height: 24),
-
-          // Pre-requisite read
+          const SizedBox(height: 10),
           Text(
-            'Pre-requisite read',
-            style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+            course.description,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textBody,
+              height: 1.55,
+            ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            '${course.grade} ${course.subject.name}',
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey),
-          ),
-          const SizedBox(height: 24),
-
-          // Language
-          Text(
-            'Language',
-            style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'English',
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey),
-          ),
-          const SizedBox(height: 24),
-
-          // Course Content summary
-          Text(
+          const SizedBox(height: 22),
+          _MetaRow(label: 'Pre-required read', value: _preReqFor(course)),
+          const SizedBox(height: 14),
+          const _MetaRow(label: 'Language', value: 'English'),
+          const SizedBox(height: 22),
+          const Text(
             'Course Content',
-            style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textHeadline,
+            ),
           ),
-          const SizedBox(height: 12),
-          _ContentStatRow(
+          const SizedBox(height: 10),
+          if (videos > 0) _ContentRow(
             icon: Icons.play_circle_outline,
-            text: '${course.lessons.where((l) => l.videoUrl != null).length.clamp(1, 99)} total hour videos',
+            label: '$hours total hour ${hours == 1 ? 'video' : 'videos'}',
           ),
-          _ContentStatRow(
+          if (articles > 0) _ContentRow(
             icon: Icons.article_outlined,
-            text: '${(course.lessons.length * 0.3).round().clamp(1, 99)} Articles',
+            label: '$articles ${articles == 1 ? 'Article' : 'Articles'}',
           ),
-          _ContentStatRow(
+          _ContentRow(
             icon: Icons.quiz_outlined,
-            text: '${(course.lessons.length * 0.5).round().clamp(1, 99)} Quizzes',
+            label: '${course.lessons.length} ${course.lessons.length == 1 ? 'Lesson' : 'Lessons'}',
           ),
-          _ContentStatRow(
-            icon: Icons.assignment_outlined,
-            text: '${(course.lessons.length * 0.2).round().clamp(1, 99)} Assignments',
-          ),
-          const SizedBox(height: 40),
         ],
       ),
     );
   }
+
+  String _preReqFor(Course course) {
+    // Suggest the immediately previous grade as the prereq. Cheap heuristic
+    // until we wire real prerequisites.
+    final grade = course.grade.trim();
+    final match = RegExp(r'(\d+)').firstMatch(grade);
+    if (match == null) return 'None';
+    final n = int.tryParse(match.group(1)!) ?? 0;
+    if (n <= 1) return 'None';
+    return 'Grade ${n - 1} ${course.subject.name}';
+  }
 }
 
-class _ContentStatRow extends StatelessWidget {
+class _MetaRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _MetaRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textHeadline,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 14, color: AppColors.textBody),
+        ),
+      ],
+    );
+  }
+}
+
+class _ContentRow extends StatelessWidget {
   final IconData icon;
-  final String text;
-  const _ContentStatRow({required this.icon, required this.text});
+  final String label;
+  const _ContentRow({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.grey, size: 20),
+          Icon(icon, size: 20, color: AppColors.textHeadline),
           const SizedBox(width: 10),
-          Text(text, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14, color: AppColors.textBody),
+          ),
         ],
       ),
     );
   }
 }
 
-// ─── Curriculum Tab ───────────────────────────────────────────────────────────
+// ─── Curriculum tab ───────────────────────────────────────────────────────────
 
-class _CurriculumTab extends ConsumerWidget {
+class _CurriculumTab extends StatefulWidget {
   final Course course;
   const _CurriculumTab({required this.course});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Group lessons into chapters (every 4-5 lessons = 1 chapter)
-    final chapters = _buildChapters(course.lessons);
+  State<_CurriculumTab> createState() => _CurriculumTabState();
+}
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      itemCount: chapters.length,
-      itemBuilder: (context, index) {
-        final chapter = chapters[index];
-        return _ChapterExpansionTile(
-          chapterNumber: index + 1,
-          chapterTitle: chapter.title,
-          lessons: chapter.lessons,
-          isInitiallyExpanded: index == 0,
-          onLessonTap: (lesson) {
-            ref.read(selectedLessonProvider.notifier).state = lesson;
-            ref.read(selectedCourseProvider.notifier).state = course;
-            context.push('/library/video-player');
-          },
+class _CurriculumTabState extends State<_CurriculumTab> {
+  final Set<int> _expanded = {};
+
+  @override
+  Widget build(BuildContext context) {
+    final lessons = widget.course.lessons;
+    if (lessons.isEmpty) {
+      return const Center(child: Text('No chapters yet.'));
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      itemCount: lessons.length,
+      separatorBuilder: (_, __) =>
+          Divider(height: 1, color: AppColors.greyLight.withValues(alpha: 0.6)),
+      itemBuilder: (context, i) {
+        final lesson = lessons[i];
+        final expanded = _expanded.contains(i);
+        return _ChapterRow(
+          index: i + 1,
+          title: lesson.title,
+          description: lesson.description,
+          minutes: lesson.durationMinutes,
+          expanded: expanded,
+          onTap: () => setState(() {
+            expanded ? _expanded.remove(i) : _expanded.add(i);
+          }),
         );
       },
     );
   }
-
-  List<_Chapter> _buildChapters(List<Lesson> lessons) {
-    if (lessons.isEmpty) {
-      return [
-        _Chapter(title: 'Introduction to Physics', lessons: [
-          Lesson(id: '1', title: 'Introduction to Physics', description: 'Video', durationMinutes: 10),
-          Lesson(id: '2', title: 'Newtons First Law', description: 'Article', durationMinutes: 8),
-          Lesson(id: '3', title: 'Newtons Second Law', description: 'Video', durationMinutes: 15),
-          Lesson(id: '4', title: "Newton's First Law of Motion", description: 'Video', durationMinutes: 5),
-          Lesson(id: '5', title: 'Physics Chapter 1 Assessment', description: 'Quiz - 5 Questions', durationMinutes: 10),
-        ]),
-        _Chapter(title: 'Define mass in the context of physics.', lessons: []),
-        _Chapter(title: "Newton's First Law of Motion", lessons: []),
-        _Chapter(title: 'Physics Chapter 1 Assessment', lessons: []),
-      ];
-    }
-
-    final List<_Chapter> chapters = [];
-    const chapterSize = 5;
-    final chapterTitles = [
-      'Introduction to Physics',
-      'Newtons First Law',
-      'Newtons Second Law',
-      'Define mass in the context of physics.',
-      "Newton's First Law of Motion Explained",
-      'Physics Chapter 1 Assessment',
-    ];
-
-    for (int i = 0; i < lessons.length; i += chapterSize) {
-      final end = (i + chapterSize).clamp(0, lessons.length);
-      final chapterIndex = i ~/ chapterSize;
-      chapters.add(_Chapter(
-        title: chapterIndex < chapterTitles.length
-            ? chapterTitles[chapterIndex]
-            : 'Chapter ${chapterIndex + 1}',
-        lessons: lessons.sublist(i, end),
-      ));
-    }
-    return chapters;
-  }
 }
 
-class _Chapter {
+class _ChapterRow extends StatelessWidget {
+  final int index;
   final String title;
-  final List<Lesson> lessons;
-  _Chapter({required this.title, required this.lessons});
-}
+  final String description;
+  final int minutes;
+  final bool expanded;
+  final VoidCallback onTap;
 
-class _ChapterExpansionTile extends StatelessWidget {
-  final int chapterNumber;
-  final String chapterTitle;
-  final List<Lesson> lessons;
-  final bool isInitiallyExpanded;
-  final Function(Lesson) onLessonTap;
-
-  const _ChapterExpansionTile({
-    required this.chapterNumber,
-    required this.chapterTitle,
-    required this.lessons,
-    this.isInitiallyExpanded = false,
-    required this.onLessonTap,
+  const _ChapterRow({
+    required this.index,
+    required this.title,
+    required this.description,
+    required this.minutes,
+    required this.expanded,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ExpansionTile(
-      initiallyExpanded: isInitiallyExpanded,
-      tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-      childrenPadding: const EdgeInsets.only(left: 20, right: 20, bottom: 8),
-      shape: const Border(),
-      collapsedShape: const Border(),
-      title: Row(
-        children: [
-          Text(
-            'Chapter $chapterNumber',
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.grey,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              chapterTitle,
-              style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-      children: lessons.isEmpty
-          ? [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'Content coming soon',
-                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey),
-                ),
-              ),
-            ]
-          : lessons.asMap().entries.map((entry) {
-              final index = entry.key;
-              final lesson = entry.value;
-              final lessonType = _getLessonType(lesson);
-              return InkWell(
-                onTap: () => onLessonTap(lesson),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 24,
-                        child: Text(
-                          '${index + 1}',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.grey,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              lesson.title,
-                              style: AppTextStyles.bodyMedium,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              lessonType == 'Quiz'
-                                  ? 'Quiz - 5 Questions'
-                                  : '$lessonType - ${lesson.durationMinutes}:${(lesson.durationMinutes % 60).toString().padLeft(2, '0')} mins',
-                              style: AppTextStyles.caption.copyWith(fontSize: 11),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        lessonType == 'Video'
-                            ? Icons.play_circle_outline
-                            : lessonType == 'Quiz'
-                                ? Icons.quiz_outlined
-                                : Icons.article_outlined,
-                        color: AppColors.grey,
-                        size: 20,
-                      ),
-                    ],
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                SizedBox(
+                  width: 80,
+                  child: Text(
+                    'Chapter $index',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.grey,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              );
-            }).toList(),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textHeadline,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: expanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 150),
+                  child: const Icon(
+                    Icons.keyboard_arrow_down,
+                    color: AppColors.grey,
+                  ),
+                ),
+              ],
+            ),
+            AnimatedCrossFade(
+              firstChild: const SizedBox(width: double.infinity),
+              secondChild: Padding(
+                padding: const EdgeInsets.fromLTRB(80, 8, 0, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (description.isNotEmpty)
+                      Text(
+                        description,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textBody,
+                          height: 1.45,
+                        ),
+                      ),
+                    if (description.isNotEmpty) const SizedBox(height: 6),
+                    Text(
+                      '$minutes min',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              crossFadeState: expanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 180),
+            ),
+          ],
+        ),
+      ),
     );
-  }
-
-  String _getLessonType(Lesson lesson) {
-    if (lesson.description.toLowerCase().contains('quiz')) return 'Quiz';
-    if (lesson.description.toLowerCase().contains('article')) return 'Article';
-    return 'Video';
   }
 }
 
-// ─── Lesson Viewer (kept for backward compat, but video_player_screen.dart is the new one) ──
+// ─── Bottom CTA ───────────────────────────────────────────────────────────────
 
-class LessonViewerScreen extends ConsumerWidget {
-  const LessonViewerScreen({super.key});
+class _EnrollFooter extends StatelessWidget {
+  final VoidCallback onEnroll;
+  const _EnrollFooter({required this.onEnroll});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final lesson = ref.watch(selectedLessonProvider);
-
-    if (lesson == null) {
-      return const Scaffold(body: Center(child: Text('No lesson selected')));
-    }
-
-    return Scaffold(
-      appBar: AppBar(title: Text(lesson.title)),
-      body: Column(
-        children: [
-          Container(
-            height: 240,
-            width: double.infinity,
-            color: Colors.black,
-            child: const Center(
-              child: Icon(Icons.play_arrow, color: Colors.white, size: 60),
-            ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppConstants.space24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(lesson.title, style: AppTextStyles.headlineSmall.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Text('${lesson.durationMinutes} minutes', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey)),
-                  const Divider(height: 48),
-                  Text(lesson.description, style: AppTextStyles.bodyMedium),
-                ],
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+        child: SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: onEnroll,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
             ),
+            child: const Text(
+              'Enroll',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
