@@ -33,17 +33,23 @@ service cloud.firestore {
     }
 
     match /courses/{courseId} {
-      allow read: if isSignedIn() &&
-                     (resource.data.status == 'published'
-                      || resource.data.ownerId == request.auth.uid
-                      || isAdmin());
+      // Published courses are world-readable so guest-mode users can browse
+      // the catalog before signing up. Unpublished drafts stay owner-only.
+      allow read: if resource.data.status == 'published'
+                     || (isSignedIn() && resource.data.ownerId == request.auth.uid)
+                     || isAdmin();
       allow create: if isTeacher()
                     && request.resource.data.ownerId == request.auth.uid;
       allow update, delete: if isSignedIn()
                             && resource.data.ownerId == request.auth.uid;
 
       match /lessons/{lessonId} {
-        allow read:  if isSignedIn();
+        // Lessons inherit their parent course's published status — readable
+        // by anyone when the course is published, otherwise owner-only.
+        allow read: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+                       || (isSignedIn()
+                           && get(/databases/$(database)/documents/courses/$(courseId)).data.ownerId
+                              == request.auth.uid);
         allow write: if isSignedIn()
                      && get(/databases/$(database)/documents/courses/$(courseId)).data.ownerId
                         == request.auth.uid;
