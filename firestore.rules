@@ -5,9 +5,9 @@ service cloud.firestore {
     function isSignedIn() { return request.auth != null; }
     function isSelf(uid)  { return isSignedIn() && request.auth.uid == uid; }
 
-    // Authoritative role lives in Firebase Auth custom claims, set by the
-    // adminInviteUser Cloud Function or via the bootstrap admin script. The
-    // Firestore users/{uid}.role field is a denormalized copy for the client UI.
+    // Authoritative role lives in Firebase Auth custom claims, set via the
+    // bootstrap admin script. The Firestore users/{uid}.role field is a
+    // denormalized copy for the client UI.
     function claimedRole() { return request.auth.token.role; }
     function isAdmin()     { return isSignedIn() && claimedRole() == 'admin'; }
     function isTeacher()   { return isSignedIn() && claimedRole() == 'teacher'; }
@@ -15,7 +15,7 @@ service cloud.firestore {
     // Roles a client may self-assign during initial profile creation. 'admin'
     // is intentionally excluded — admins must be promoted server-side.
     function isSelfAssignableRole(role) {
-      return role in ['student', 'parent', 'teacher'];
+      return role in ['student', 'teacher'];
     }
 
     match /users/{uid} {

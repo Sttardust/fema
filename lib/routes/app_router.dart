@@ -10,21 +10,7 @@ import '../features/auth/presentation/phone_signup_screen.dart';
 import '../features/auth/presentation/phone_login_screen.dart';
 import '../features/auth/presentation/otp_screen.dart';
 import '../features/onboarding/presentation/role_selection_screen.dart';
-import '../features/onboarding/presentation/parent_details_screen.dart';
-import '../features/onboarding/presentation/child_secure_profile_screen.dart';
-import '../features/onboarding/presentation/child_basic_profile_screen.dart';
-import '../features/onboarding/presentation/child_profile_list_screen.dart';
 import '../features/onboarding/presentation/grade_selection_screen.dart';
-import '../features/onboarding/presentation/personal_details_screen.dart';
-import '../features/onboarding/presentation/school_details_screen.dart';
-import '../features/onboarding/presentation/subjects_selection_screen.dart';
-import '../features/onboarding/presentation/learning_goals_screen.dart';
-import '../features/onboarding/presentation/referral_source_screen.dart';
-import '../features/onboarding/presentation/quiz_intro_screen.dart';
-import '../features/onboarding/presentation/quiz_screen.dart';
-import '../features/onboarding/presentation/teacher_onboarding_screens.dart';
-import '../features/onboarding/presentation/admin_onboarding_screens.dart';
-import '../features/onboarding/presentation/language_selection_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/home/presentation/search_screen.dart';
 import '../features/onboarding/presentation/fema_intro_screen.dart';
@@ -35,9 +21,7 @@ import '../features/profile/presentation/profile_screen.dart';
 import '../features/profile/presentation/account_management_screen.dart';
 import '../features/profile/presentation/about_us_screen.dart';
 import '../features/home/presentation/management_placeholder_screen.dart';
-import '../features/parent/presentation/child_security_screen.dart';
 import '../features/teacher/presentation/class_management_screen.dart';
-import '../features/teacher/presentation/content_editor_screen.dart';
 import '../features/teacher/presentation/teacher_home_screen.dart';
 import '../features/profile/domain/user_profile_repository.dart';
 import '../features/onboarding/domain/onboarding_provider.dart';
@@ -55,7 +39,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     redirect: (context, state) {
       final location = state.matchedLocation;
-      final isAuthRoute = 
+      final isAuthRoute =
           location == '/login' ||
           location == '/signup' ||
           location == '/signup-phone' ||
@@ -72,12 +56,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       // users hitting these get bounced to the intro carousel.
       final isStrictlyProtected = location == '/profile' ||
           location.startsWith('/teacher/') ||
-          location.startsWith('/admin/') ||
-          location.startsWith('/parent/');
+          location.startsWith('/admin/');
       final isProtectedRoute = isGuestBrowsable || isStrictlyProtected;
       final isTeacherRoute = location.startsWith('/teacher/');
       final isAdminRoute = location.startsWith('/admin/');
-      final isParentRoute = location.startsWith('/parent/');
 
       if (isLoading) {
         return location == '/' ? null : '/';
@@ -101,10 +83,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (isAdminRoute && profile!.role != UserRole.admin) {
-        return '/home';
-      }
-
-      if (isParentRoute && profile!.role != UserRole.parent) {
         return '/home';
       }
 
@@ -158,84 +136,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RoleSelectionScreen(),
       ),
       GoRoute(
-        path: '/onboarding/parent-details',
-        builder: (context, state) => const ParentDetailsScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/child-secure',
-        builder: (context, state) => const ChildSecureProfileScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/child-basic',
-        builder: (context, state) => const ChildBasicProfileScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/child-list',
-        builder: (context, state) => const ChildProfileListScreen(),
-      ),
-      GoRoute(
         path: '/onboarding/grade',
         builder: (context, state) => const GradeSelectionScreen(),
       ),
       GoRoute(
-        path: '/onboarding/details',
-        builder: (context, state) => const PersonalDetailsScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/school',
-        builder: (context, state) => const SchoolDetailsScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/subjects-confident',
-        builder: (context, state) => const SubjectsSelectionScreen(isConfident: true),
-      ),
-      GoRoute(
-        path: '/onboarding/subjects-improve',
-        builder: (context, state) => const SubjectsSelectionScreen(isConfident: false),
-      ),
-      GoRoute(
-        path: '/onboarding/goals',
-        builder: (context, state) => const LearningGoalsScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/referral',
-        builder: (context, state) => const ReferralSourceScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/teacher-experience',
-        builder: (context, state) => const TeacherExperienceScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/teacher-personalization',
-        builder: (context, state) => const TeacherPersonalizationScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/admin-user-creation',
-        builder: (context, state) => const AdminUserCreationScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/admin-password',
-        builder: (context, state) => const AdminPasswordSetupScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/quiz-intro',
-        builder: (context, state) => const QuizIntroScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/quiz',
-        builder: (context, state) => const QuizScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/language',
-        builder: (context, state) => const LanguageSelectionScreen(),
-      ),
-      GoRoute(
         path: '/onboarding/intro',
         builder: (context, state) => const FemaIntroScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/teacher-intro',
-        builder: (context, state) => const TeacherIntroCarouselScreen(),
       ),
       GoRoute(
         path: '/home',
@@ -282,10 +188,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ClassManagementScreen(),
       ),
       GoRoute(
-        path: '/teacher/editor',
-        builder: (context, state) => const ContentEditorScreen(),
-      ),
-      GoRoute(
         path: '/admin/management',
         builder: (context, state) => const ManagementPlaceholderScreen(
           title: 'Admin Console',
@@ -300,10 +202,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           description: 'Real-time metrics on user engagement, course popularity, and system health.',
           icon: Icons.analytics_outlined,
         ),
-      ),
-      GoRoute(
-        path: '/parent/security',
-        builder: (context, state) => const ChildSecurityScreen(),
       ),
     ],
   );

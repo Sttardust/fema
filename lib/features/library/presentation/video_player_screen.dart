@@ -6,9 +6,7 @@ import '../domain/library_provider.dart';
 import '../domain/models.dart';
 
 /// Watching-a-lesson screen. Three tabs (Note / Transcript / Up Next) below
-/// the video, a Bookmark / Download chip row above the tabs, Previous / Next
-/// in the bottom bar, and a floating "Ask the teacher" FAB that opens a
-/// chat bottom sheet.
+/// the video, and a Previous / Next bottom bar.
 class VideoPlayerScreen extends ConsumerStatefulWidget {
   const VideoPlayerScreen({super.key});
 
@@ -21,7 +19,6 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen>
   late TabController _tabController;
   bool _isPlaying = false;
   double _progress = 0.4;
-  bool _bookmarked = false;
 
   @override
   void initState() {
@@ -87,14 +84,6 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen>
             onScrub: (v) => setState(() => _progress = v),
           ),
           const SizedBox(height: 12),
-          _BookmarkDownloadChips(
-            bookmarked: _bookmarked,
-            onBookmark: () => setState(() => _bookmarked = !_bookmarked),
-            onDownload: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Download queued (coming soon)')),
-            ),
-          ),
-          const SizedBox(height: 12),
           TabBar(
             controller: _tabController,
             labelColor: AppColors.primary,
@@ -134,33 +123,12 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openAskTheTeacher(context),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        child: const Icon(Icons.bar_chart_rounded),
-      ),
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.endFloat,
     );
   }
 
   String _subjectLabel(CourseSubject s) {
     final n = s.name;
     return n[0].toUpperCase() + n.substring(1);
-  }
-
-  void _openAskTheTeacher(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => const _AskTheTeacherSheet(),
-    );
   }
 }
 
@@ -292,75 +260,6 @@ class _VideoPlayer extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BookmarkDownloadChips extends StatelessWidget {
-  final bool bookmarked;
-  final VoidCallback onBookmark;
-  final VoidCallback onDownload;
-
-  const _BookmarkDownloadChips({
-    required this.bookmarked,
-    required this.onBookmark,
-    required this.onDownload,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _Chip(
-          icon: bookmarked ? Icons.bookmark : Icons.bookmark_border,
-          label: 'Bookmark',
-          onTap: onBookmark,
-        ),
-        const SizedBox(width: 12),
-        _Chip(
-          icon: Icons.download_outlined,
-          label: 'Download',
-          onTap: onDownload,
-        ),
-      ],
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  const _Chip({required this.icon, required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.greyLight),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: AppColors.textHeadline),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textHeadline,
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -525,7 +424,7 @@ class _UpNextTab extends ConsumerWidget {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       itemCount: upcoming.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (ctx, i) => const Divider(height: 1),
       itemBuilder: (context, i) {
         final lesson = upcoming[i];
         final isCurrent = lesson.id == currentLesson.id;
@@ -646,172 +545,4 @@ class _BottomNav extends StatelessWidget {
       ),
     );
   }
-}
-
-// ─── Ask the teacher bottom sheet ─────────────────────────────────────────────
-
-class _AskTheTeacherSheet extends StatefulWidget {
-  const _AskTheTeacherSheet();
-
-  @override
-  State<_AskTheTeacherSheet> createState() => _AskTheTeacherSheetState();
-}
-
-class _AskTheTeacherSheetState extends State<_AskTheTeacherSheet> {
-  final _ctrl = TextEditingController();
-  final List<_Msg> _messages = [
-    const _Msg('What is the first rule of thermodynamics?', mine: true),
-    const _Msg(
-      'The first rule of thermodynamics states that energy cannot be created '
-      'or destroyed, only transformed from one form to another.',
-      mine: false,
-    ),
-    const _Msg('Thank you', mine: true),
-  ];
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  void _send() {
-    final text = _ctrl.text.trim();
-    if (text.isEmpty) return;
-    setState(() {
-      _messages.add(_Msg(text, mine: true));
-      _ctrl.clear();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.7,
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.greyLight,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const Expanded(
-                  child: Center(
-                    child: Text(
-                      'Ask the teacher',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 48),
-              ],
-            ),
-            const Divider(height: 1),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Text(
-                'Chat Started',
-                style: TextStyle(color: AppColors.grey, fontSize: 12),
-              ),
-            ),
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _messages.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (_, i) {
-                  final m = _messages[i];
-                  return Align(
-                    alignment:
-                        m.mine ? Alignment.centerLeft : Alignment.centerRight,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.8,
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: m.mine
-                              ? Colors.white
-                              : AppColors.background,
-                          border: Border.all(color: AppColors.greyLight),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          m.text,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textBody,
-                            height: 1.45,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.greyLight),
-                      ),
-                      child: TextField(
-                        controller: _ctrl,
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: 'Write your message',
-                          hintStyle: TextStyle(color: AppColors.grey),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.send, color: AppColors.primary),
-                    onPressed: _send,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Msg {
-  final String text;
-  final bool mine;
-  const _Msg(this.text, {required this.mine});
 }

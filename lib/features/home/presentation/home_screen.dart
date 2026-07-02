@@ -7,7 +7,6 @@ import '../../onboarding/domain/onboarding_provider.dart';
 import '../../library/presentation/library_screen.dart';
 import '../../library/domain/library_provider.dart';
 import '../../library/domain/models.dart';
-import '../../notifications/presentation/notifications_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../auth/domain/auth_repository.dart';
 import '../../../core/widgets/app_logo.dart';
@@ -30,7 +29,6 @@ class HomeScreen extends ConsumerWidget {
               children: const [
                 _StudentHomePage(),
                 LibraryScreen(),
-                NotificationsScreen(),
                 ProfileScreen(),
               ],
             ),
@@ -69,18 +67,11 @@ class HomeScreen extends ConsumerWidget {
                   onTap: () => ref.read(homeTabProvider.notifier).state = 1,
                 ),
                 _NavBarItem(
-                  icon: Icons.notifications_none_outlined,
-                  activeIcon: Icons.notifications,
-                  label: 'Notification',
-                  isActive: currentIndex == 2,
-                  onTap: () => ref.read(homeTabProvider.notifier).state = 2,
-                ),
-                _NavBarItem(
                   icon: Icons.person_outline,
                   activeIcon: Icons.person,
                   label: 'Profile',
-                  isActive: currentIndex == 3,
-                  onTap: () => ref.read(homeTabProvider.notifier).state = 3,
+                  isActive: currentIndex == 2,
+                  onTap: () => ref.read(homeTabProvider.notifier).state = 2,
                 ),
               ],
             ),

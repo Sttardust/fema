@@ -17,24 +17,31 @@ class GradeSelectionScreen extends ConsumerStatefulWidget {
 
 class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
   String? _selectedGrade;
+  bool _isSubmitting = false;
   final List<String> _primaryGrades = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'];
   final List<String> _secondaryGrades = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
 
   void _onContinue() {
     if (_selectedGrade == null) return;
 
-    final onboardingState = ref.read(onboardingProvider);
-    if (onboardingState.role == UserRole.parent) {
-      ref.read(onboardingProvider.notifier).setGrade(_selectedGrade!);
-      context.push('/onboarding/subjects-confident');
+    if (_selectedGrade == 'Grade 1' ||
+        _selectedGrade == 'Grade 2' ||
+        _selectedGrade == 'Grade 3') {
+      _showParentalModal();
     } else {
-      // Logic for parental assistance for lower grades (customizable threshold)
-      if (_selectedGrade == 'Grade 1' || _selectedGrade == 'Grade 2' || _selectedGrade == 'Grade 3') {
-        _showParentalModal();
-      } else {
-        ref.read(onboardingProvider.notifier).setGrade(_selectedGrade!);
-        context.push('/onboarding/details');
-      }
+      _finishWithGrade();
+    }
+  }
+
+  void _finishWithGrade() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      ref.read(onboardingProvider.notifier).setGrade(_selectedGrade!);
+      await ref.read(onboardingProvider.notifier).completeOnboarding();
+      if (mounted) context.go('/home');
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -55,7 +62,7 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              context.go('/onboarding/intro');
+              _finishWithGrade();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -71,15 +78,12 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final onboardingState = ref.watch(onboardingProvider);
-    final isParent = onboardingState.role == UserRole.parent;
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: OnboardingProgressHeader(
-        currentStep: isParent ? 4 : 1,
-        totalSteps: 8,
-        showSkip: !isParent,
+        currentStep: 1,
+        totalSteps: 1,
+        showSkip: false,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -89,7 +93,7 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
             children: [
               const SizedBox(height: 16),
               Text(
-                isParent ? "What grade is your child in?" : "What grade are you in?",
+                "What grade are you in?",
                 style: AppTextStyles.headlineMedium.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -111,7 +115,7 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
               const SizedBox(height: 40),
               AppButton(
                 text: 'Continue',
-                onPressed: _selectedGrade != null ? _onContinue : null,
+                onPressed: (_selectedGrade != null && !_isSubmitting) ? _onContinue : null,
               ),
               const SizedBox(height: 40),
             ],
