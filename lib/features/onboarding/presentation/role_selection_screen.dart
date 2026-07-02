@@ -17,24 +17,31 @@ class RoleSelectionScreen extends ConsumerStatefulWidget {
 
 class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   UserRole? _selected;
+  bool _isSubmitting = false;
 
   void _onContinue() async {
+    if (_isSubmitting) return;
     final picked = _selected;
     if (picked == null) return;
-    ref.read(onboardingProvider.notifier).setRole(picked);
+    setState(() => _isSubmitting = true);
+    try {
+      ref.read(onboardingProvider.notifier).setRole(picked);
 
-    switch (picked) {
-      case UserRole.student:
-        context.push('/onboarding/grade');
-        break;
-      case UserRole.teacher:
-        await ref.read(onboardingProvider.notifier).completeOnboarding();
-        if (mounted) context.go('/teacher/home');
-        break;
-      case UserRole.parent:
-      case UserRole.admin:
-      case UserRole.none:
-        break;
+      switch (picked) {
+        case UserRole.student:
+          context.push('/onboarding/grade');
+          break;
+        case UserRole.teacher:
+          await ref.read(onboardingProvider.notifier).completeOnboarding();
+          if (mounted) context.go('/teacher/home');
+          break;
+        case UserRole.parent:
+        case UserRole.admin:
+        case UserRole.none:
+          break;
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -93,7 +100,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               const Spacer(),
               AppButton(
                 text: 'Continue',
-                onPressed: _selected == null ? null : _onContinue,
+                onPressed: (_selected == null || _isSubmitting) ? null : _onContinue,
                 backgroundColor:
                     _selected == null ? AppColors.greyLight : AppColors.primary,
               ),

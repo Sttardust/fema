@@ -17,6 +17,7 @@ class GradeSelectionScreen extends ConsumerStatefulWidget {
 
 class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
   String? _selectedGrade;
+  bool _isSubmitting = false;
   final List<String> _primaryGrades = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'];
   final List<String> _secondaryGrades = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
 
@@ -33,9 +34,15 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
   }
 
   void _finishWithGrade() async {
-    ref.read(onboardingProvider.notifier).setGrade(_selectedGrade!);
-    await ref.read(onboardingProvider.notifier).completeOnboarding();
-    if (mounted) context.go('/home');
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      ref.read(onboardingProvider.notifier).setGrade(_selectedGrade!);
+      await ref.read(onboardingProvider.notifier).completeOnboarding();
+      if (mounted) context.go('/home');
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   void _showParentalModal() {
@@ -108,7 +115,7 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
               const SizedBox(height: 40),
               AppButton(
                 text: 'Continue',
-                onPressed: _selectedGrade != null ? _onContinue : null,
+                onPressed: (_selectedGrade != null && !_isSubmitting) ? _onContinue : null,
               ),
               const SizedBox(height: 40),
             ],
