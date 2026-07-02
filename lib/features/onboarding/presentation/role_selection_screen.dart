@@ -18,7 +18,7 @@ class RoleSelectionScreen extends ConsumerStatefulWidget {
 class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   UserRole? _selected;
 
-  void _onContinue() {
+  void _onContinue() async {
     final picked = _selected;
     if (picked == null) return;
     ref.read(onboardingProvider.notifier).setRole(picked);
@@ -27,13 +27,11 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
       case UserRole.student:
         context.push('/onboarding/grade');
         break;
-      case UserRole.parent:
-        ref.read(onboardingProvider.notifier).updateActiveChild(ChildProfile());
-        context.push('/onboarding/parent-details');
-        break;
       case UserRole.teacher:
-        context.push('/onboarding/teacher-intro');
+        await ref.read(onboardingProvider.notifier).completeOnboarding();
+        if (mounted) context.go('/teacher/home');
         break;
+      case UserRole.parent:
       case UserRole.admin:
       case UserRole.none:
         break;
@@ -87,17 +85,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               ),
               const SizedBox(height: 14),
               _RoleCard(
-                label: 'I am a Parent',
-                role: UserRole.parent,
-                selected: _selected == UserRole.parent,
-                onTap: () => setState(() => _selected = UserRole.parent),
-              ),
-              const SizedBox(height: 14),
-              _RoleCard(
-                // Visual: "Educator/Admin" per design. Functional: maps to
-                // teacher. Admin accounts are provisioned server-side via
-                // Cloud Function (not yet built) — they don't self-signup.
-                label: 'I am an Educator/Admin',
+                label: 'I am a Teacher',
                 role: UserRole.teacher,
                 selected: _selected == UserRole.teacher,
                 onTap: () => setState(() => _selected = UserRole.teacher),
