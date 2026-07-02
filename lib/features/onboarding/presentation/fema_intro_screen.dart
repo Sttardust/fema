@@ -8,8 +8,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/pill_button.dart';
 
 /// Entry screen for unauthenticated users. Auto-advancing 3-page carousel
-/// with persistent Sign Up / Login at bottom and a "Browse the app" link
-/// in the top-right that drops the user into guest-mode /home.
+/// with "Get started" (signup), "Browse as guest" (home), and a sign-in
+/// footer at the bottom.
 class FemaIntroScreen extends StatefulWidget {
   const FemaIntroScreen({super.key});
 
@@ -72,24 +72,6 @@ class _FemaIntroScreenState extends State<FemaIntroScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top-right guest link
-            Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: TextButton(
-                  onPressed: () => context.go('/home'),
-                  child: Text(
-                    'Browse the app',
-                    style: GoogleFonts.figtree(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ),
-            ),
             // Carousel
             Expanded(
               child: PageView.builder(
@@ -122,16 +104,42 @@ class _FemaIntroScreenState extends State<FemaIntroScreen> {
                     }),
                   ),
                   const SizedBox(height: 24),
-                  // Primary action — Sign Up
+                  // Primary action — Get started → signup
                   PillButton(
-                    label: 'Sign Up',
+                    label: 'Get started',
                     onPressed: () => context.go('/signup'),
                   ),
                   const SizedBox(height: 12),
-                  // Secondary action — Login
+                  // Secondary action — Browse as guest → home
                   PillButton.outlined(
-                    label: 'Login',
-                    onPressed: () => context.go('/login'),
+                    label: 'Browse as guest',
+                    onPressed: () => context.go('/home'),
+                  ),
+                  const SizedBox(height: 20),
+                  // Footer — sign-in link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Already have an account?',
+                        style: GoogleFonts.figtree(
+                          fontSize: 13,
+                          color: AppColors.grey,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      GestureDetector(
+                        onTap: () => context.go('/login'),
+                        child: Text(
+                          'Sign in',
+                          style: GoogleFonts.figtree(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 24),
                 ],

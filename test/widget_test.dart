@@ -10,8 +10,8 @@ void main() {
     );
 
     expect(find.text('Welcome to FEMA!'), findsOneWidget);
-    expect(find.text('Sign Up'), findsOneWidget);
-    expect(find.text('Login'), findsOneWidget);
-    expect(find.text('Browse the app'), findsOneWidget);
+    expect(find.text('Get started'), findsOneWidget);
+    expect(find.text('Browse as guest'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
   });
 }
