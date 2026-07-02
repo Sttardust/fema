@@ -18,11 +18,10 @@ class SoftCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(radius);
+    final content = Padding(padding: padding, child: child);
 
-    final container = Container(
-      padding: padding,
+    return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
         borderRadius: borderRadius,
         boxShadow: const [
           BoxShadow(
@@ -32,18 +31,13 @@ class SoftCard extends StatelessWidget {
           ),
         ],
       ),
-      child: onTap != null
-          ? Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: borderRadius,
-                onTap: onTap,
-                child: child,
-              ),
-            )
-          : child,
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: borderRadius,
+        child: onTap == null
+            ? content
+            : InkWell(borderRadius: borderRadius, onTap: onTap, child: content),
+      ),
     );
-
-    return container;
   }
 }
