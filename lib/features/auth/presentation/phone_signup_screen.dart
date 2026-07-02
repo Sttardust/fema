@@ -25,6 +25,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
       await ref.read(authRepositoryProvider).verifyPhoneNumber(
         phoneNumber: phoneNumber,
         codeSent: (verificationId, resendToken) {
+          if (!mounted) return;
           // Store phone in onboarding state for later use
           ref.read(onboardingProvider.notifier).updatePersonalDetails(phone: _phoneController.text);
           context.push(
@@ -36,6 +37,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
           );
         },
         verificationFailed: (e) {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(e.message ?? 'Verification failed')),
           );

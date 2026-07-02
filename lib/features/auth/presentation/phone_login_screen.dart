@@ -26,6 +26,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
       await ref.read(authRepositoryProvider).verifyPhoneNumber(
         phoneNumber: phoneNumber,
         codeSent: (verificationId, resendToken) {
+          if (!mounted) return;
           context.push(
             '/otp',
             extra: {
@@ -35,6 +36,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
           );
         },
         verificationFailed: (e) {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(e.message ?? 'Verification failed')),
           );

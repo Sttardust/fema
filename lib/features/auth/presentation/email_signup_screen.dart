@@ -33,7 +33,15 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
           _passwordController.text,
         );
 
+        // Split "Full name" into firstName / surName on the first space.
+        final fullName = _nameController.text.trim();
+        final spaceIndex = fullName.indexOf(' ');
+        final firstName = spaceIndex == -1 ? fullName : fullName.substring(0, spaceIndex).trim();
+        final surName = spaceIndex == -1 ? null : fullName.substring(spaceIndex + 1).trim();
+
         ref.read(onboardingProvider.notifier).updatePersonalDetails(
+          firstName: firstName.isNotEmpty ? firstName : null,
+          surName: (surName != null && surName.isNotEmpty) ? surName : null,
           email: _emailController.text,
         );
 
@@ -249,39 +257,65 @@ class _PasswordField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 54,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(27),
-        border: Border.all(color: AppColors.greyLight),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          const Icon(Icons.lock_outline, size: 18, color: AppColors.grey),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              obscureText: obscureText,
-              style: GoogleFonts.figtree(fontSize: 14, color: AppColors.textBody),
-              decoration: InputDecoration.collapsed(
-                hintText: hint,
-                hintStyle: GoogleFonts.figtree(fontSize: 14, color: AppColors.grey),
+    return FormField<String>(
+      validator: validator,
+      builder: (FormFieldState<String> field) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 54,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(27),
+                border: Border.all(
+                  color: field.hasError ? AppColors.error : AppColors.greyLight,
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  const Icon(Icons.lock_outline, size: 18, color: AppColors.grey),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      obscureText: obscureText,
+                      onChanged: (_) => field.didChange(controller.text),
+                      style: GoogleFonts.figtree(fontSize: 14, color: AppColors.textBody),
+                      decoration: InputDecoration.collapsed(
+                        hintText: hint,
+                        hintStyle: GoogleFonts.figtree(fontSize: 14, color: AppColors.grey),
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: onToggle,
+                    child: Icon(
+                      obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 18,
+                      color: AppColors.grey,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          GestureDetector(
-            onTap: onToggle,
-            child: Icon(
-              obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-              size: 18,
-              color: AppColors.grey,
-            ),
-          ),
-        ],
-      ),
+            if (field.hasError) ...[
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.only(left: 20),
+                child: Text(
+                  field.errorText!,
+                  style: GoogleFonts.figtree(
+                    fontSize: 12,
+                    color: AppColors.error,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }
