@@ -11,7 +11,6 @@ import '../features/auth/presentation/phone_login_screen.dart';
 import '../features/auth/presentation/otp_screen.dart';
 import '../features/onboarding/presentation/role_selection_screen.dart';
 import '../features/onboarding/presentation/grade_selection_screen.dart';
-import '../features/onboarding/presentation/admin_onboarding_screens.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/home/presentation/search_screen.dart';
 import '../features/onboarding/presentation/fema_intro_screen.dart';
@@ -139,14 +138,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/onboarding/grade',
         builder: (context, state) => const GradeSelectionScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/admin-user-creation',
-        builder: (context, state) => const AdminUserCreationScreen(),
-      ),
-      GoRoute(
-        path: '/onboarding/admin-password',
-        builder: (context, state) => const AdminPasswordSetupScreen(),
       ),
       GoRoute(
         path: '/onboarding/intro',
