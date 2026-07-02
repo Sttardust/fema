@@ -31,7 +31,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
             '/otp',
             extra: {
               'verificationId': verificationId,
-              'redirectPath': '/onboarding/details',
+              'redirectPath': '/onboarding',
             },
           );
         },
