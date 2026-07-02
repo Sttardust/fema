@@ -5,7 +5,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../library/domain/library_provider.dart';
 import '../../library/domain/models.dart';
-import '../../notifications/presentation/notifications_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../profile/domain/user_profile_repository.dart';
 import 'class_management_screen.dart';
@@ -26,7 +25,6 @@ class TeacherHomeScreen extends ConsumerWidget {
         children: const [
           _TeacherDashboard(),
           ClassManagementScreen(),
-          NotificationsScreen(),
           ProfileScreen(),
         ],
       ),
@@ -45,7 +43,6 @@ class _TeacherNavBar extends StatelessWidget {
     final tabs = [
       (icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home'),
       (icon: Icons.class_outlined, activeIcon: Icons.class_, label: 'My Classes'),
-      (icon: Icons.notifications_none_outlined, activeIcon: Icons.notifications, label: 'Alerts'),
       (icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile'),
     ];
 
@@ -125,21 +122,6 @@ class _TeacherDashboard extends ConsumerWidget {
                     ],
                   ),
                   const Spacer(),
-                  Stack(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.notifications_none_outlined, size: 26, color: AppColors.textHeadline),
-                        onPressed: () => ref.read(teacherTabProvider.notifier).state = 2,
-                      ),
-                      Positioned(
-                        top: 8, right: 8,
-                        child: Container(
-                          width: 8, height: 8,
-                          decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -157,57 +139,6 @@ class _TeacherDashboard extends ConsumerWidget {
                   const SizedBox(width: 12),
                   Expanded(child: _StatCard(title: 'Avg Rating', value: '4.8', icon: Icons.star_outline, color: Colors.amber)),
                 ],
-              ),
-            ),
-          ),
-
-          // ── Create Course CTA ──
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-              child: GestureDetector(
-                onTap: () => context.push('/teacher/editor'),
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.primaryDark],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 6)),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Start a New Course', style: AppTextStyles.headlineSmall.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 6),
-                            Text('Share your expertise with students nationwide.', style: AppTextStyles.bodySmall.copyWith(color: Colors.white70)),
-                            const SizedBox(height: 16),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-                              child: Text('Create Course', style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Image.asset(
-                        'assets/images/Teacher/Course creation/first time.png',
-                        height: 90,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.add_circle_outline, size: 80, color: Colors.white54),
-                      ),
-                    ],
-                  ),
-                ),
               ),
             ),
           ),
