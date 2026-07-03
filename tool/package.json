@@ -1,0 +1,8 @@
+{
+  "name": "fema-tools",
+  "private": true,
+  "description": "Operational scripts for the FEMA Firebase project (seeding, admin provisioning)",
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

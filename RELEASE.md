@@ -137,7 +137,16 @@ The user must **sign out and sign back in** after this so their ID token picks u
 
 ## 4. Content seeding
 
-See [README.md § Content seeding](README.md#content-seeding) for the full procedure.
+Use the seed script (idempotent, safe to re-run):
+
+```bash
+cd tool && npm install
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+node seed-course.js                                       # 2 demo courses, no videos yet
+node seed-course.js --video-url "<storage-download-url>"  # re-run once Storage has an MP4
+```
+
+See [README.md § Content seeding](README.md#content-seeding) for the manual console procedure.
 
 At minimum, seed **one course and one lesson with a `videoUrl`** pointing to a Firebase Storage download URL before inviting internal testers, so the core watch flow is testable end-to-end.
 
