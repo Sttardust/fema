@@ -75,7 +75,7 @@ After deployment, the in-app "Delete my account" button will perform full deleti
 
 ### d. App Check — Play Integrity provider
 
-1. Firebase console → **Project settings → App Check → Android app → Play Integrity** — register.
+1. Firebase console → **App Check** (left nav) → **Android app → Play Integrity** — register.
 2. Play Console → **Release → App integrity** — copy the **release** SHA-256 certificate fingerprint (available after the first signed build is uploaded).
 3. Firebase console → **Project settings → Your apps → Android (com.fema.fema) → Add fingerprint** — paste the SHA-256.
 4. Download the updated `google-services.json` and replace `android/app/google-services.json` if it changed.
@@ -121,7 +121,7 @@ Run it:
 
 ```bash
 # Install firebase-admin once in the tools directory
-cd ~/tools && npm init -y && npm install firebase-admin
+mkdir -p ~/tools && cd ~/tools && npm init -y && npm install firebase-admin
 
 # Export a service-account key downloaded from Firebase console →
 # Project settings → Service accounts → Generate new private key
