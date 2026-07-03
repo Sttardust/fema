@@ -46,6 +46,8 @@ dependencies:
   cached_network_image: ^3.4.1
   flutter_svg: ^2.0.10+1
   google_fonts: ^6.2.1
+  video_player: ^2.9.2
+  chewie: ^1.8.5
 
 dev_dependencies:
   flutter_test:
