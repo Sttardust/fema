@@ -32,7 +32,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                   child: Image.asset(
                     'assets/images/Student/Language selection.png',
                     fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Icon(
+                    errorBuilder: (context, error, stackTrace) => const Icon(
                       Icons.language,
                       size: 150,
                       color: AppColors.primary,
@@ -102,7 +102,7 @@ class _LanguageOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.05) : AppColors.background,
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : AppColors.background,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.greyLight,
