@@ -23,8 +23,8 @@ class CircleIconButton extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: AppColors.cardShadow,
-            blurRadius: 18,
-            offset: Offset(0, 6),
+            blurRadius: 12,
+            offset: Offset(0, 4),
           ),
         ],
       ),
