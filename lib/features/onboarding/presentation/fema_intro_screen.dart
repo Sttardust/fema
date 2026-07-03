@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/pill_button.dart';
+import '../../../../core/widgets/app_logo.dart';
 
 /// Entry screen for unauthenticated users. Auto-advancing 3-page carousel
 /// with "Get started" (signup), "Browse as guest" (home), and a sign-in
@@ -185,11 +186,7 @@ class _IntroPage extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: const Icon(
-                Icons.school,
-                size: 56,
-                color: Colors.white,
-              ),
+              child: const AppLogo(size: 56, color: Colors.white),
             ),
           ),
           const SizedBox(height: 36),

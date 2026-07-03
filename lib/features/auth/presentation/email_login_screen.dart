@@ -6,6 +6,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/pill_text_field.dart';
+import '../../../core/widgets/app_logo.dart';
 import '../domain/auth_repository.dart';
 import '../domain/auth_error_messages.dart';
 
@@ -83,7 +84,7 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                       ],
                     ),
                     alignment: Alignment.center,
-                    child: const Icon(Icons.school, size: 30, color: Colors.white),
+                    child: const AppLogo(size: 30, color: Colors.white),
                   ),
                 ),
                 const SizedBox(height: 28),
