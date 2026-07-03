@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'firebase_options.dart';
 import 'routes/app_router.dart';
 import 'core/theme/app_colors.dart';
@@ -28,6 +29,15 @@ void main() async {
           ? const AppleDebugProvider()
           : const AppleDeviceCheckProvider(),
     );
+
+    if (!kDebugMode) {
+      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+    }
   } catch (e) {
     debugPrint(
       '[FEMA] Firebase initialization failed: $e\n'
