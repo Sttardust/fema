@@ -9,7 +9,7 @@ void main() {
       const MaterialApp(home: FemaIntroScreen()),
     );
 
-    expect(find.text('Welcome to FEMA!'), findsOneWidget);
+    expect(find.text('Learn anywhere,\nanytime'), findsOneWidget);
     expect(find.text('Get started'), findsOneWidget);
     expect(find.text('Browse as guest'), findsOneWidget);
     expect(find.text('Sign in'), findsOneWidget);

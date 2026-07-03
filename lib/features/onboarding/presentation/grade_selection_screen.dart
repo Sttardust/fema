@@ -122,7 +122,7 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                 alignment: Alignment.centerLeft,
                 child: CircleIconButton(
                   icon: Icons.chevron_left,
-                  onTap: () => context.pop(),
+                  onTap: () => context.canPop() ? context.pop() : context.go('/onboarding'),
                 ),
               ),
             ),

@@ -44,7 +44,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   // Back button
                   CircleIconButton(
                     icon: Icons.chevron_left,
-                    onTap: () => context.pop(),
+                    onTap: () => context.canPop() ? context.pop() : context.go('/home'),
                   ),
 
                   const SizedBox(width: 10),

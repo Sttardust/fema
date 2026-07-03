@@ -74,7 +74,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                   alignment: Alignment.centerLeft,
                   child: CircleIconButton(
                     icon: Icons.chevron_left,
-                    onTap: () => context.pop(),
+                    onTap: () => context.canPop() ? context.pop() : context.go('/login'),
                   ),
                 ),
                 const SizedBox(height: 28),

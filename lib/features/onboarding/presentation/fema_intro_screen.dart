@@ -1,14 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/pill_button.dart';
-import '../../../../core/widgets/app_logo.dart';
 
 /// Entry screen for unauthenticated users. Auto-advancing 3-page carousel
+/// over a dark gradient + smoke backdrop ("Welcome v2" in fema-design.pen),
 /// with "Get started" (signup), "Browse as guest" (home), and a sign-in
 /// footer at the bottom.
 class FemaIntroScreen extends StatefulWidget {
@@ -20,6 +18,8 @@ class FemaIntroScreen extends StatefulWidget {
 
 class _FemaIntroScreenState extends State<FemaIntroScreen> {
   static const _autoAdvance = Duration(seconds: 4);
+  // Background pans left as slides advance (parallax), per the design.
+  static const _parallaxPerPage = 103.5;
 
   final PageController _pageController = PageController();
   Timer? _timer;
@@ -27,19 +27,19 @@ class _FemaIntroScreenState extends State<FemaIntroScreen> {
 
   final List<_IntroPage> _pages = const [
     _IntroPage(
-      title: 'Welcome to FEMA!',
+      title: 'Learn anywhere,\nanytime',
       description:
-          'A smart way to learn, grow, and shine.\nBuilt for Ethiopian students, parents, and educators.',
+          'Video lessons for Grades 1–12, made for Ethiopian students. Learn at your own pace.',
     ),
     _IntroPage(
-      title: 'Expert Teachers',
+      title: 'Real lessons,\nreal teachers',
       description:
-          "Learn from Ethiopia's best educators and stay ahead in your learning journey.",
+          'Watch curriculum-aligned video lessons made for the Ethiopian classroom.',
     ),
     _IntroPage(
-      title: 'Academic Success',
+      title: 'Teachers run\ntheir classroom',
       description:
-          'Track your progress and achieve excellence with our adaptive learning tools.',
+          'Classes, students, and attendance — all in one place for every teacher.',
     ),
   ];
 
@@ -66,84 +66,131 @@ class _FemaIntroScreenState extends State<FemaIntroScreen> {
     super.dispose();
   }
 
+  double get _pageOffset =>
+      _pageController.hasClients && _pageController.position.haveDimensions
+          ? _pageController.page ?? _currentPage.toDouble()
+          : _currentPage.toDouble();
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
+    final size = MediaQuery.sizeOf(context);
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF08061C),
+        body: Stack(
+          fit: StackFit.expand,
           children: [
-            // Carousel
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: _pages.length,
-                onPageChanged: (i) => setState(() => _currentPage = i),
-                itemBuilder: (context, index) => _pages[index],
+            // Base gradient
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF08061C), Color(0xFF1E0A40), Color(0xFF3D0072)],
+                  stops: [0.0, 0.4, 1.0],
+                ),
               ),
             ),
-            // Bottom controls
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24),
-              child: Column(
-                children: [
-                  // Page dots
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(_pages.length, (i) {
-                      final active = _currentPage == i;
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: active ? 20 : 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: active ? AppColors.primary : AppColors.greyLight,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      );
-                    }),
+            // Smoke backdrop with horizontal parallax
+            AnimatedBuilder(
+              animation: _pageController,
+              builder: (context, _) {
+                return Positioned(
+                  left: -_pageOffset * _parallaxPerPage,
+                  top: 0,
+                  bottom: 0,
+                  width: size.width * 1.53,
+                  child: Image.asset(
+                    'assets/images/welcome_bg.jpg',
+                    fit: BoxFit.cover,
                   ),
-                  const SizedBox(height: 24),
-                  // Primary action — Get started → signup
-                  PillButton(
-                    label: 'Get started',
-                    onPressed: () => context.go('/signup'),
+                );
+              },
+            ),
+            // Content over a bottom scrim
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [Color(0xFF240C4A), Color(0xFF240C4A), Color(0x00240C4A)],
+                    stops: [0.0, 0.55, 1.0],
                   ),
-                  const SizedBox(height: 12),
-                  // Secondary action — Browse as guest → home
-                  PillButton.outlined(
-                    label: 'Browse as guest',
-                    onPressed: () => context.go('/home'),
-                  ),
-                  const SizedBox(height: 20),
-                  // Footer — sign-in link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                ),
+                padding: const EdgeInsets.fromLTRB(28, 24, 28, 36),
+                child: SafeArea(
+                  top: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        'Already have an account?',
-                        style: GoogleFonts.figtree(
-                          fontSize: 13,
-                          color: AppColors.grey,
+                      SizedBox(
+                        height: 150,
+                        child: PageView.builder(
+                          controller: _pageController,
+                          itemCount: _pages.length,
+                          onPageChanged: (i) => setState(() => _currentPage = i),
+                          itemBuilder: (context, index) => _pages[index],
                         ),
                       ),
-                      const SizedBox(width: 5),
-                      GestureDetector(
-                        onTap: () => context.go('/login'),
-                        child: Text(
-                          'Sign in',
-                          style: GoogleFonts.figtree(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(_pages.length, (i) {
+                          final active = _currentPage == i;
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            width: active ? 20 : 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: active ? Colors.white : const Color(0x40FFFFFF),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 20),
+                      _WhitePillButton(
+                        label: 'Get started',
+                        onTap: () => context.go('/signup'),
+                      ),
+                      const SizedBox(height: 12),
+                      _GhostPillButton(
+                        label: 'Browse as guest',
+                        onTap: () => context.go('/home'),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Already have an account?',
+                            style: GoogleFonts.figtree(
+                              fontSize: 13,
+                              color: const Color(0x70FFFFFF),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 5),
+                          GestureDetector(
+                            onTap: () => context.go('/login'),
+                            child: Text(
+                              'Sign in',
+                              style: GoogleFonts.figtree(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
-                ],
+                ),
               ),
             ),
           ],
@@ -164,52 +211,96 @@ class _IntroPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Icon composition: 200px primarySoft circle → 120px primary circle → white icon
-          Container(
-            width: 200,
-            height: 200,
-            decoration: const BoxDecoration(
-              color: AppColors.primarySoft,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.figtree(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            height: 1.2,
+            color: Colors.white,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          description,
+          style: GoogleFonts.figtree(
+            fontSize: 14,
+            height: 1.6,
+            color: const Color(0xFFC4B0E0),
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+}
+
+class _WhitePillButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _WhitePillButton({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      width: double.infinity,
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(27),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(27),
+          onTap: onTap,
+          child: Center(
+            child: Text(
+              label,
+              style: GoogleFonts.figtree(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF3D0072),
               ),
-              alignment: Alignment.center,
-              child: const AppLogo(size: 56, color: Colors.white),
             ),
           ),
-          const SizedBox(height: 36),
-          Text(
-            title,
-            style: GoogleFonts.figtree(
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textBody,
+        ),
+      ),
+    );
+  }
+}
+
+class _GhostPillButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _GhostPillButton({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      width: double.infinity,
+      child: Material(
+        color: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(27),
+          side: const BorderSide(color: Color(0x50FFFFFF)),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(27),
+          onTap: onTap,
+          child: Center(
+            child: Text(
+              label,
+              style: GoogleFonts.figtree(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xCCFFFFFF),
+              ),
             ),
-            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 12),
-          Text(
-            description,
-            style: GoogleFonts.figtree(
-              fontSize: 14,
-              height: 1.55,
-              color: AppColors.grey,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+        ),
       ),
     );
   }

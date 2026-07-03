@@ -91,7 +91,7 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
                   alignment: Alignment.centerLeft,
                   child: CircleIconButton(
                     icon: Icons.chevron_left,
-                    onTap: () => context.pop(),
+                    onTap: () => context.canPop() ? context.pop() : context.go('/onboarding/intro'),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -188,7 +188,7 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
                 PillButton.outlined(
                   label: 'Sign up with phone',
                   icon: Icons.smartphone,
-                  onPressed: () => context.pushReplacement('/signup-phone'),
+                  onPressed: () => context.push('/signup-phone'),
                 ),
                 const SizedBox(height: 24),
                 // Footer

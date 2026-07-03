@@ -73,7 +73,7 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
                 alignment: Alignment.centerLeft,
                 child: CircleIconButton(
                   icon: Icons.chevron_left,
-                  onTap: () => context.pop(),
+                  onTap: () => context.canPop() ? context.pop() : context.go('/signup'),
                 ),
               ),
               const SizedBox(height: 28),

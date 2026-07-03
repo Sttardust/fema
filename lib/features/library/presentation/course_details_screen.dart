@@ -75,7 +75,7 @@ class _CourseDetailsScreenState extends ConsumerState<CourseDetailsScreen>
                   // Back button — 40px circular surface
                   CircleIconButton(
                     icon: Icons.chevron_left,
-                    onTap: () => context.pop(),
+                    onTap: () => context.canPop() ? context.pop() : context.go('/home'),
                   ),
 
                   // Centred title

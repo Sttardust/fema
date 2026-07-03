@@ -153,7 +153,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen>
             _TopNavRow(
               lessonNumber: lessonNumber,
               totalLessons: lessons.length,
-              onBack: () => context.pop(),
+              onBack: () => context.canPop() ? context.pop() : context.go('/home'),
             ),
             const SizedBox(height: 12),
 

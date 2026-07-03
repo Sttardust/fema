@@ -35,7 +35,7 @@ class AccountManagementScreen extends ConsumerWidget {
                 children: [
                   CircleIconButton(
                     icon: Icons.chevron_left,
-                    onTap: () => context.pop(),
+                    onTap: () => context.canPop() ? context.pop() : context.go('/profile'),
                   ),
                   const SizedBox(width: 14),
                   Text(
