@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/subject_visuals.dart';
+import '../../../core/widgets/circle_icon_button.dart';
 import '../../library/domain/library_provider.dart';
 import '../../library/domain/models.dart';
 import '../../../core/widgets/soft_card.dart';
+import '../../../core/widgets/state_views.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -39,29 +42,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               child: Row(
                 children: [
                   // Back button
-                  GestureDetector(
+                  CircleIconButton(
+                    icon: Icons.chevron_left,
                     onTap: () => context.pop(),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        color: AppColors.surface,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.cardShadow,
-                            blurRadius: 18,
-                            offset: Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.chevron_left,
-                        color: AppColors.textBody,
-                        size: 22,
-                      ),
-                    ),
                   ),
 
                   const SizedBox(width: 10),
@@ -148,21 +131,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.search, size: 40, color: AppColors.greyLight),
-          const SizedBox(height: 12),
-          Text(
-            'Search for courses and subjects',
-            style: GoogleFonts.figtree(
-              fontSize: 14,
-              color: AppColors.grey,
-            ),
-          ),
-        ],
-      ),
+    return const EmptyStateView(
+      icon: Icons.search,
+      message: 'Search for courses and subjects',
     );
   }
 
@@ -176,22 +147,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             .toList();
 
         if (results.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.search_off,
-                    size: 40, color: AppColors.greyLight),
-                const SizedBox(height: 12),
-                Text(
-                  'No results for "$_query"',
-                  style: GoogleFonts.figtree(
-                    fontSize: 14,
-                    color: AppColors.grey,
-                  ),
-                ),
-              ],
-            ),
+          return EmptyStateView(
+            icon: Icons.search_off,
+            message: 'No results for "$_query"',
           );
         }
 
@@ -219,7 +177,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   final course = results[index];
                   return _SearchResultCard(
                     course: course,
-                    index: index,
                     onTap: () {
                       ref.read(selectedCourseProvider.notifier).state = course;
                       context.push('/library/course-details');
@@ -234,51 +191,26 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       loading: () => const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
       ),
-      error: (err, stack) => Center(
-        child: Text(
-          'Error loading results',
-          style: GoogleFonts.figtree(
-            fontSize: 14,
-            color: AppColors.grey,
-          ),
-        ),
+      error: (err, stack) => ErrorStateView(
+        message: "Couldn't load results",
+        onRetry: () => ref.invalidate(coursesProvider),
       ),
     );
   }
 }
 
-IconData _subjectIconForSearch(CourseSubject subject) {
-  switch (subject) {
-    case CourseSubject.math:
-      return Icons.calculate;
-    case CourseSubject.science:
-      return Icons.science;
-    case CourseSubject.english:
-      return Icons.menu_book;
-    case CourseSubject.amharic:
-      return Icons.translate;
-    case CourseSubject.socialStudies:
-      return Icons.public;
-    case CourseSubject.other:
-      return Icons.school;
-  }
-}
-
 class _SearchResultCard extends StatelessWidget {
   final Course course;
-  final int index;
   final VoidCallback onTap;
 
   const _SearchResultCard({
     required this.course,
-    required this.index,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final tint =
-        AppColors.subjectTints[index % AppColors.subjectTints.length];
+    final tint = subjectTint(course.subject);
 
     return SoftCard(
       radius: 18,
@@ -296,7 +228,7 @@ class _SearchResultCard extends StatelessWidget {
             ),
             alignment: Alignment.center,
             child: Icon(
-              _subjectIconForSearch(course.subject),
+              subjectIcon(course.subject),
               color: Colors.white,
               size: 24,
             ),

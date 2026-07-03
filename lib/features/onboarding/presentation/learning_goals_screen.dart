@@ -87,7 +87,7 @@ class _LearningGoalsScreenState extends ConsumerState<LearningGoalsScreen> {
             Expanded(
               child: ListView.separated(
                 itemCount: availableGoals.length,
-                separatorBuilder: (_, __) => const SizedBox(height: AppConstants.space12),
+                separatorBuilder: (context, index) => const SizedBox(height: AppConstants.space12),
                 itemBuilder: (context, index) {
                   final goal = availableGoals[index];
                   final isSelected = selectedGoals.contains(goal);

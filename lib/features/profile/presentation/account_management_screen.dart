@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../auth/domain/auth_repository.dart';
+import '../../auth/domain/auth_error_messages.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/circle_icon_button.dart';
 import '../../../core/widgets/soft_card.dart';
 import '../domain/user_profile_repository.dart';
 
@@ -31,29 +33,9 @@ class AccountManagementScreen extends ConsumerWidget {
               // ── Top nav ──
               Row(
                 children: [
-                  GestureDetector(
+                  CircleIconButton(
+                    icon: Icons.chevron_left,
                     onTap: () => context.pop(),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        shape: BoxShape.circle,
-                        boxShadow: const [
-                          BoxShadow(
-                            color: AppColors.cardShadow,
-                            blurRadius: 18,
-                            offset: Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.chevron_left,
-                        size: 22,
-                        color: AppColors.textBody,
-                      ),
-                    ),
                   ),
                   const SizedBox(width: 14),
                   Text(
@@ -115,7 +97,7 @@ class AccountManagementScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFFF1D7D7)),
+                  border: Border.all(color: AppColors.dangerBorder),
                   boxShadow: const [
                     BoxShadow(
                       color: AppColors.cardShadow,
@@ -208,7 +190,7 @@ class AccountManagementScreen extends ConsumerWidget {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not send reset email: $e')),
+        SnackBar(content: Text(authErrorMessage(e))),
       );
     }
   }

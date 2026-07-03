@@ -25,7 +25,7 @@ import '../features/home/presentation/admin_home_screen.dart';
 import '../features/teacher/presentation/class_management_screen.dart';
 import '../features/teacher/presentation/teacher_home_screen.dart';
 import '../features/profile/domain/user_profile_repository.dart';
-import '../features/onboarding/domain/onboarding_provider.dart';
+import 'app_redirect.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -38,63 +38,13 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     initialLocation: '/',
-    redirect: (context, state) {
-      final location = state.matchedLocation;
-      final isAuthRoute =
-          location == '/login' ||
-          location == '/signup' ||
-          location == '/signup-phone' ||
-          location == '/login-phone' ||
-          location == '/otp';
-      final isOnboardingRoute = location.startsWith('/onboarding');
-      // Routes accessible to anyone (incl. guest mode browse). For these,
-      // unauth users are allowed but UI may show signup CTAs.
-      final isGuestBrowsable = location == '/home' ||
-          location.startsWith('/home/') ||
-          location == '/library' ||
-          location.startsWith('/library/');
-      // Routes that require auth: profile + role-specific surfaces. Unauth
-      // users hitting these get bounced to the intro carousel.
-      final isStrictlyProtected = location == '/profile' ||
-          location.startsWith('/teacher/') ||
-          location.startsWith('/admin/');
-      final isProtectedRoute = isGuestBrowsable || isStrictlyProtected;
-      final isTeacherRoute = location.startsWith('/teacher/');
-      final isAdminRoute = location.startsWith('/admin/');
-
-      if (isLoading) {
-        return location == '/' ? null : '/';
-      }
-
-      if (user == null) {
-        if (location == '/') return '/onboarding/intro';
-        // guest mode: unauth users can browse /home + /library; only role-gated routes are protected
-        if (isStrictlyProtected) return '/onboarding/intro';
-        return null;
-      }
-
-      if (!hasCompletedOnboarding) {
-        if (location == '/') return '/onboarding';
-        if (isProtectedRoute) return '/onboarding';
-        return null;
-      }
-
-      if (isTeacherRoute && profile!.role != UserRole.teacher) {
-        return '/home';
-      }
-
-      if (isAdminRoute && profile!.role != UserRole.admin) {
-        return '/home';
-      }
-
-      if (location == '/' || isAuthRoute || isOnboardingRoute) {
-        if (profile!.role == UserRole.teacher) return '/teacher/home';
-        if (profile.role == UserRole.admin) return '/admin/management';
-        return '/home';
-      }
-
-      return null;
-    },
+    redirect: (context, state) => computeRedirect(
+      location: state.matchedLocation,
+      isLoading: isLoading,
+      isAuthenticated: user != null,
+      role: profile?.role,
+      hasCompletedOnboarding: hasCompletedOnboarding,
+    ),
     routes: [
       GoRoute(
         path: '/',
@@ -122,6 +72,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           final args = state.extra as Map<String, dynamic>? ?? const {};
           final verificationId = args['verificationId'] as String?;
           final redirectPath = args['redirectPath'] as String? ?? '/';
+          final phoneNumber = args['phoneNumber'] as String? ?? '';
 
           if (verificationId == null) {
             return const FemaIntroScreen();
@@ -130,6 +81,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return OtpScreen(
             verificationId: verificationId,
             redirectPath: redirectPath,
+            phoneNumber: phoneNumber,
           );
         },
       ),

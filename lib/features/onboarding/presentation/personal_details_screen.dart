@@ -209,7 +209,7 @@ class _GenderOption extends StatelessWidget {
       child: Container(
         height: 54,
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.05) : AppColors.background,
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : AppColors.background,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.greyLight,

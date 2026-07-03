@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/circle_icon_button.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/soft_card.dart';
+import '../../../core/widgets/state_views.dart';
 import '../domain/lesson_video_controller.dart';
 import '../domain/library_provider.dart';
 import '../domain/models.dart';
@@ -123,7 +125,17 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen>
     });
 
     if (lesson == null || course == null) {
-      return const Scaffold(body: Center(child: Text('No lesson selected')));
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: EmptyStateView(
+          icon: Icons.video_library_outlined,
+          message: 'No lesson selected',
+          action: PillButton(
+            label: 'Browse library',
+            onPressed: () => context.go('/home'),
+          ),
+        ),
+      );
     }
 
     final lessons = course.lessons;
@@ -249,9 +261,9 @@ class _TopNavRow extends StatelessWidget {
       child: Row(
         children: [
           // 40 px circular back button with surface fill + card shadow
-          _CircleNavButton(
+          CircleIconButton(
             icon: Icons.chevron_left,
-            onPressed: onBack,
+            onTap: onBack,
           ),
 
           // Centered label: "Lesson n of m"
@@ -271,41 +283,6 @@ class _TopNavRow extends StatelessWidget {
           // Spacer sized to match the back button so the label stays centered
           const SizedBox(width: 40),
         ],
-      ),
-    );
-  }
-}
-
-class _CircleNavButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  const _CircleNavButton({required this.icon, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 18,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onPressed,
-          child: Icon(icon, size: 24, color: AppColors.textBody),
-        ),
       ),
     );
   }

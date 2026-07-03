@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/subject_visuals.dart';
+import '../../../core/widgets/circle_icon_button.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/soft_card.dart';
+import '../../../core/widgets/state_views.dart';
 import '../domain/library_provider.dart';
 import '../domain/models.dart';
 
@@ -45,9 +48,16 @@ class _CourseDetailsScreenState extends ConsumerState<CourseDetailsScreen>
   Widget build(BuildContext context) {
     final course = ref.watch(selectedCourseProvider);
     if (course == null) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: AppColors.background,
-        body: Center(child: Text('No course selected')),
+        body: EmptyStateView(
+          icon: Icons.video_library_outlined,
+          message: 'No course selected',
+          action: PillButton(
+            label: 'Browse library',
+            onPressed: () => context.go('/home'),
+          ),
+        ),
       );
     }
 
@@ -63,29 +73,9 @@ class _CourseDetailsScreenState extends ConsumerState<CourseDetailsScreen>
               child: Row(
                 children: [
                   // Back button — 40px circular surface
-                  GestureDetector(
+                  CircleIconButton(
+                    icon: Icons.chevron_left,
                     onTap: () => context.pop(),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        color: AppColors.surface,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.cardShadow,
-                            blurRadius: 18,
-                            offset: Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.chevron_left,
-                        size: 22,
-                        color: AppColors.textBody,
-                      ),
-                    ),
                   ),
 
                   // Centred title
@@ -170,25 +160,6 @@ class _CourseDetailsScreenState extends ConsumerState<CourseDetailsScreen>
   }
 }
 
-// ── Private helpers ──────────────────────────────────────────────────────────
-
-IconData _subjectIcon(CourseSubject subject) {
-  switch (subject) {
-    case CourseSubject.math:
-      return Icons.calculate;
-    case CourseSubject.science:
-      return Icons.science;
-    case CourseSubject.english:
-      return Icons.menu_book;
-    case CourseSubject.amharic:
-      return Icons.translate;
-    case CourseSubject.socialStudies:
-      return Icons.public;
-    case CourseSubject.other:
-      return Icons.school;
-  }
-}
-
 // ── Course banner ─────────────────────────────────────────────────────────────
 
 class _CourseBanner extends StatelessWidget {
@@ -232,7 +203,7 @@ class _CourseBanner extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: Icon(
-                _subjectIcon(course.subject),
+                subjectIcon(course.subject),
                 color: Colors.white,
                 size: 26,
               ),
@@ -459,11 +430,9 @@ class _CurriculumTab extends ConsumerWidget {
     final selectedLesson = ref.watch(selectedLessonProvider);
 
     if (lessons.isEmpty) {
-      return const Center(
-        child: Text(
-          'No lessons yet.',
-          style: TextStyle(fontSize: 14, color: AppColors.grey),
-        ),
+      return const EmptyStateView(
+        icon: Icons.school_outlined,
+        message: 'No lessons yet',
       );
     }
 

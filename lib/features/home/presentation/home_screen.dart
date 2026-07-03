@@ -10,8 +10,10 @@ import '../../library/domain/models.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../auth/domain/auth_repository.dart';
 import '../../profile/domain/user_profile_repository.dart';
+import '../../../core/theme/subject_visuals.dart';
 import '../../../core/widgets/capsule_tab_bar.dart';
 import '../../../core/widgets/soft_card.dart';
+import '../../../core/widgets/state_views.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -329,7 +331,10 @@ class _StudentHomePageState extends ConsumerState<_StudentHomePage> {
 
               if (filtered.isEmpty) {
                 return const SliverToBoxAdapter(
-                  child: _EmptyCoursesState(),
+                  child: EmptyStateView(
+                    icon: Icons.school_outlined,
+                    message: 'No courses yet',
+                  ),
                 );
               }
 
@@ -345,7 +350,6 @@ class _StudentHomePageState extends ConsumerState<_StudentHomePage> {
                     final course = filtered[index];
                     return _CourseGridCard(
                       course: course,
-                      index: index,
                       onTap: () {
                         ref.read(selectedCourseProvider.notifier).state =
                             course;
@@ -367,8 +371,11 @@ class _StudentHomePageState extends ConsumerState<_StudentHomePage> {
                 ),
               ),
             ),
-            error: (err, stack) => const SliverToBoxAdapter(
-              child: _EmptyCoursesState(),
+            error: (err, stack) => SliverToBoxAdapter(
+              child: ErrorStateView(
+                message: "Couldn't load courses",
+                onRetry: () => ref.invalidate(coursesProvider),
+              ),
             ),
           ),
         ),
@@ -392,59 +399,18 @@ class _StudentHomePageState extends ConsumerState<_StudentHomePage> {
   }
 }
 
-class _EmptyCoursesState extends StatelessWidget {
-  const _EmptyCoursesState();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 40),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.school, size: 40, color: AppColors.greyLight),
-          SizedBox(height: 10),
-          Text(
-            'No courses yet',
-            style: TextStyle(fontSize: 14, color: AppColors.grey),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-IconData _subjectIcon(CourseSubject subject) {
-  switch (subject) {
-    case CourseSubject.math:
-      return Icons.calculate;
-    case CourseSubject.science:
-      return Icons.science;
-    case CourseSubject.english:
-      return Icons.menu_book;
-    case CourseSubject.amharic:
-      return Icons.translate;
-    case CourseSubject.socialStudies:
-      return Icons.public;
-    case CourseSubject.other:
-      return Icons.school;
-  }
-}
-
 class _CourseGridCard extends StatelessWidget {
   final Course course;
-  final int index;
   final VoidCallback onTap;
 
   const _CourseGridCard({
     required this.course,
-    required this.index,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final tint = AppColors.subjectTints[index % AppColors.subjectTints.length];
+    final tint = subjectTint(course.subject);
 
     return SoftCard(
       radius: 20,
@@ -463,7 +429,7 @@ class _CourseGridCard extends StatelessWidget {
             ),
             alignment: Alignment.center,
             child: Icon(
-              _subjectIcon(course.subject),
+              subjectIcon(course.subject),
               color: Colors.white,
               size: 30,
             ),

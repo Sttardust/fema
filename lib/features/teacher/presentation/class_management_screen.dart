@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/soft_card.dart';
 import '../../../../core/widgets/pill_button.dart';
+import '../../../../core/widgets/soft_card.dart';
+import '../../../../core/widgets/state_views.dart';
 import '../domain/class_models.dart';
 import '../domain/class_repository.dart';
 
@@ -36,16 +37,22 @@ class ClassManagementScreen extends ConsumerWidget {
       body: classesAsync.when(
         data: (classes) {
           if (classes.isEmpty) {
-            return _EmptyState(
-              onAddPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Add class documents under the Firestore `classes` collection with a matching `teacherId`.',
+            return EmptyStateView(
+              icon: Icons.school_outlined,
+              message: 'No classes yet',
+              action: PillButton.outlined(
+                label: 'Setup Hint',
+                icon: Icons.info_outline,
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Add class documents under the Firestore `classes` collection with a matching `teacherId`.',
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             );
           }
 
@@ -54,11 +61,9 @@ class ClassManagementScreen extends ConsumerWidget {
         loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
-        error: (error, stack) => Center(
-          child: Text(
-            'Could not load classes: $error',
-            style: GoogleFonts.figtree(fontSize: 14, color: AppColors.grey),
-          ),
+        error: (error, stack) => ErrorStateView(
+          message: "Couldn't load classes",
+          onRetry: () => ref.invalidate(teacherClassesProvider),
         ),
       ),
     );
@@ -224,14 +229,9 @@ class _StudentsTab extends StatelessWidget {
       children: [
         Expanded(
           child: !hasStudents
-              ? Center(
-                  child: Text(
-                    'No students enrolled yet',
-                    style: GoogleFonts.figtree(
-                      fontSize: 14,
-                      color: AppColors.grey,
-                    ),
-                  ),
+              ? const EmptyStateView(
+                  icon: Icons.people_outline,
+                  message: 'No students yet',
                 )
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
@@ -472,11 +472,9 @@ class _AttendanceTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (classes.isEmpty) {
-      return Center(
-        child: Text(
-          'No classes available',
-          style: GoogleFonts.figtree(fontSize: 14, color: AppColors.grey),
-        ),
+      return const EmptyStateView(
+        icon: Icons.school_outlined,
+        message: 'No classes yet',
       );
     }
 
@@ -558,15 +556,18 @@ class _ClassAttendanceSection extends StatelessWidget {
                   size: 20,
                 ),
                 const SizedBox(width: 10),
-                Text(
-                  'Take attendance for ${teacherClass.name}',
-                  style: GoogleFonts.figtree(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                Expanded(
+                  child: Text(
+                    'Take attendance for ${teacherClass.name}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.figtree(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
-                const Spacer(),
                 const Icon(
                   Icons.chevron_right,
                   size: 18,
@@ -811,7 +812,7 @@ class _AttendanceSheetState extends ConsumerState<_AttendanceSheet> {
                                 'Failed to save attendance: $e',
                                 style: GoogleFonts.figtree(fontSize: 13),
                               ),
-                              backgroundColor: Colors.red.shade700,
+                              backgroundColor: AppColors.error,
                             ),
                           );
                         }
@@ -886,47 +887,3 @@ class _SummaryTile extends StatelessWidget {
   }
 }
 
-// ─── Empty State ───
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.onAddPressed});
-  final VoidCallback onAddPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.school, size: 64, color: AppColors.greyLight),
-            const SizedBox(height: 16),
-            Text(
-              'No classes found',
-              style: GoogleFonts.figtree(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.grey,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Add class documents under the Firestore `classes` collection with a matching `teacherId`.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.figtree(fontSize: 13, color: AppColors.grey),
-            ),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: PillButton.outlined(
-                label: 'Setup Hint',
-                icon: Icons.info_outline,
-                onPressed: onAddPressed,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

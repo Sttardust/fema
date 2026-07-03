@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,17 +7,21 @@ import 'package:pinput/pinput.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/circle_icon_button.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../domain/auth_repository.dart';
+import '../domain/auth_error_messages.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   final String verificationId;
   final String redirectPath;
+  final String phoneNumber;
 
   const OtpScreen({
     super.key,
     required this.verificationId,
     required this.redirectPath,
+    required this.phoneNumber,
   });
 
   @override
@@ -26,9 +31,88 @@ class OtpScreen extends ConsumerStatefulWidget {
 class _OtpScreenState extends ConsumerState<OtpScreen> {
   final pinController = TextEditingController();
 
+  // Mutable verificationId that can be updated after a resend.
+  late String _verificationId;
+
+  // Countdown state
+  static const _countdownSeconds = 60;
+  int _secondsRemaining = _countdownSeconds;
+  Timer? _countdownTimer;
+
+  // Resend in-flight guard
+  bool _resendInFlight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _verificationId = widget.verificationId;
+    _startCountdown();
+  }
+
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    setState(() => _secondsRemaining = _countdownSeconds);
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_secondsRemaining > 0) {
+          _secondsRemaining--;
+        } else {
+          timer.cancel();
+        }
+      });
+    });
+  }
+
+  Future<void> _resend() async {
+    if (_resendInFlight || _secondsRemaining > 0) return;
+
+    setState(() => _resendInFlight = true);
+
+    try {
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: widget.phoneNumber,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          await FirebaseAuth.instance.signInWithCredential(credential);
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          if (!mounted) return;
+          setState(() => _resendInFlight = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(authErrorMessage(e))),
+          );
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          if (!mounted) return;
+          setState(() {
+            _verificationId = verificationId;
+            _resendInFlight = false;
+          });
+          _startCountdown();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Code sent!')),
+          );
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          if (!mounted) return;
+          setState(() => _verificationId = verificationId);
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _resendInFlight = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authErrorMessage(e))),
+      );
+    }
+  }
+
   Future<void> _verify(String pin) async {
     final credential = PhoneAuthProvider.credential(
-      verificationId: widget.verificationId,
+      verificationId: _verificationId,
       smsCode: pin,
     );
     try {
@@ -36,7 +120,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid code. Please try again.')),
+          SnackBar(content: Text(authErrorMessage(e))),
         );
       }
       return;
@@ -49,6 +133,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   @override
   void dispose() {
     pinController.dispose();
+    _countdownTimer?.cancel();
     super.dispose();
   }
 
@@ -84,6 +169,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       ),
     );
 
+    final bool isCounting = _secondsRemaining > 0;
+    final String mm = (_secondsRemaining ~/ 60).toString();
+    final String ss = (_secondsRemaining % 60).toString().padLeft(2, '0');
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -98,29 +187,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               // Back button
               Align(
                 alignment: Alignment.centerLeft,
-                child: GestureDetector(
+                child: CircleIconButton(
+                  icon: Icons.chevron_left,
                   onTap: () => context.pop(),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: const BoxDecoration(
-                      color: AppColors.surface,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.cardShadow,
-                          blurRadius: 18,
-                          offset: Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.chevron_left,
-                      color: AppColors.textBody,
-                      size: 22,
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(height: 28),
@@ -163,21 +232,30 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                     "Didn't get the code? ",
                     style: GoogleFonts.figtree(fontSize: 13, color: AppColors.grey),
                   ),
-                  TextButton(
-                    onPressed: () {},
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(0, 24),
-                    ),
-                    child: Text(
-                      'Resend',
+                  if (isCounting)
+                    Text(
+                      'Resend in $mm:$ss',
                       style: GoogleFonts.figtree(
                         fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                        color: AppColors.grey,
+                      ),
+                    )
+                  else
+                    TextButton(
+                      onPressed: _resendInFlight ? null : _resend,
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(0, 24),
+                      ),
+                      child: Text(
+                        'Resend',
+                        style: GoogleFonts.figtree(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 16),

@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/subject_visuals.dart';
 import '../../../core/widgets/soft_card.dart';
+import '../../../core/widgets/state_views.dart';
 import '../domain/library_provider.dart';
 import '../domain/models.dart';
 
@@ -136,7 +138,10 @@ class LibraryScreen extends ConsumerWidget {
                         .toList();
 
                 if (filtered.isEmpty) {
-                  return const _EmptyState();
+                  return const EmptyStateView(
+                    icon: Icons.school_outlined,
+                    message: 'No courses yet',
+                  );
                 }
 
                 return ListView.separated(
@@ -147,7 +152,6 @@ class LibraryScreen extends ConsumerWidget {
                     final course = filtered[index];
                     return _LibraryCourseRow(
                       course: course,
-                      index: index,
                       onTap: () {
                         ref.read(selectedCourseProvider.notifier).state =
                             course;
@@ -160,14 +164,9 @@ class LibraryScreen extends ConsumerWidget {
               loading: () => const Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
-              error: (err, _) => Center(
-                child: Text(
-                  'Error: $err',
-                  style: GoogleFonts.figtree(
-                    fontSize: 14,
-                    color: AppColors.grey,
-                  ),
-                ),
+              error: (err, _) => ErrorStateView(
+                message: "Couldn't load courses",
+                onRetry: () => ref.invalidate(coursesProvider),
               ),
             ),
           ),
@@ -192,65 +191,20 @@ class LibraryScreen extends ConsumerWidget {
   }
 }
 
-// ── Private helpers ──────────────────────────────────────────────────────────
-
-IconData _subjectIcon(CourseSubject subject) {
-  switch (subject) {
-    case CourseSubject.math:
-      return Icons.calculate;
-    case CourseSubject.science:
-      return Icons.science;
-    case CourseSubject.english:
-      return Icons.menu_book;
-    case CourseSubject.amharic:
-      return Icons.translate;
-    case CourseSubject.socialStudies:
-      return Icons.public;
-    case CourseSubject.other:
-      return Icons.school;
-  }
-}
-
-// ── Empty state ───────────────────────────────────────────────────────────────
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.school, size: 40, color: AppColors.greyLight),
-          SizedBox(height: 10),
-          Text(
-            'No courses yet',
-            style: TextStyle(fontSize: 14, color: AppColors.grey),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ── Course row card ───────────────────────────────────────────────────────────
 
 class _LibraryCourseRow extends StatelessWidget {
   final Course course;
-  final int index;
   final VoidCallback onTap;
 
   const _LibraryCourseRow({
     required this.course,
-    required this.index,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final tint =
-        AppColors.subjectTints[index % AppColors.subjectTints.length];
+    final tint = subjectTint(course.subject);
 
     return SoftCard(
       radius: 18,
@@ -268,7 +222,7 @@ class _LibraryCourseRow extends StatelessWidget {
             ),
             alignment: Alignment.center,
             child: Icon(
-              _subjectIcon(course.subject),
+              subjectIcon(course.subject),
               color: Colors.white,
               size: 24,
             ),

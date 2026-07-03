@@ -74,43 +74,45 @@ class _ReferralSourceScreenState extends ConsumerState<ReferralSourceScreen> {
             ),
             const SizedBox(height: AppConstants.space32),
             Expanded(
-              child: ListView.separated(
-                itemCount: sources.length,
-                separatorBuilder: (_, __) => const SizedBox(height: AppConstants.space12),
-                itemBuilder: (context, index) {
-                  final source = sources[index];
-                  final isSelected = selectedSource == source;
-                  
-                  return Column(
-                    children: [
-                      ListTile(
-                        tileColor: Colors.white,
-                        selectedTileColor: AppColors.primary.withValues(alpha: 0.05),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppConstants.radius12),
-                          side: BorderSide(
-                            color: isSelected ? AppColors.primary : AppColors.greyLight,
+              child: RadioGroup<String>(
+                groupValue: selectedSource,
+                onChanged: (val) => setState(() => selectedSource = val),
+                child: ListView.separated(
+                  itemCount: sources.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: AppConstants.space12),
+                  itemBuilder: (context, index) {
+                    final source = sources[index];
+                    final isSelected = selectedSource == source;
+
+                    return Column(
+                      children: [
+                        ListTile(
+                          tileColor: Colors.white,
+                          selectedTileColor: AppColors.primary.withValues(alpha: 0.05),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppConstants.radius12),
+                            side: BorderSide(
+                              color: isSelected ? AppColors.primary : AppColors.greyLight,
+                            ),
+                          ),
+                          title: Text(source, style: AppTextStyles.bodyLarge),
+                          leading: Radio<String>(
+                            value: source,
+                            activeColor: AppColors.primary,
                           ),
                         ),
-                        title: Text(source, style: AppTextStyles.bodyLarge),
-                        leading: Radio<String>(
-                          value: source,
-                          groupValue: selectedSource,
-                          onChanged: (val) => setState(() => selectedSource = val),
-                          activeColor: AppColors.primary,
-                        ),
-                      ),
-                      if (isSelected && source == 'Other') ...[
-                        const SizedBox(height: AppConstants.space12),
-                        AppTextField(
-                          controller: _otherController,
-                          hintText: 'Please specify',
-                          autofocus: true,
-                        ),
+                        if (isSelected && source == 'Other') ...[
+                          const SizedBox(height: AppConstants.space12),
+                          AppTextField(
+                            controller: _otherController,
+                            hintText: 'Please specify',
+                            autofocus: true,
+                          ),
+                        ],
                       ],
-                    ],
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
             const SizedBox(height: AppConstants.space24),

@@ -93,10 +93,10 @@ class _TeacherIntroCarouselScreenState extends State<TeacherIntroCarouselScreen>
                           page.imagePath,
                           height: 280,
                           fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => Container(
+                          errorBuilder: (context, error, stackTrace) => Container(
                             height: 280,
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.07),
+                              color: AppColors.primary.withValues(alpha: 0.07),
                               borderRadius: BorderRadius.circular(24),
                             ),
                             child: const Center(child: Icon(Icons.school, size: 100, color: AppColors.primary)),
@@ -345,7 +345,7 @@ class _TeacherExperienceScreenState extends ConsumerState<TeacherExperienceScree
                 width: 1.5,
               ),
               boxShadow: isSelected
-                  ? [BoxShadow(color: AppColors.primary.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 4))]
+                  ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 4))]
                   : null,
             ),
             child: Center(
@@ -454,7 +454,7 @@ class _TeacherPersonalizationScreenState extends ConsumerState<TeacherPersonaliz
                     duration: const Duration(milliseconds: 180),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primary.withOpacity(0.05) : Colors.white,
+                      color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isSelected ? AppColors.primary : AppColors.greyLight,
