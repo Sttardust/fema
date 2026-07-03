@@ -75,7 +75,6 @@ class _ClassManagementBody extends ConsumerWidget {
     final segmentIndex = ref.watch(_classManagementTabProvider);
 
     final totalStudents = classes.fold<int>(0, (sum, c) => sum + c.studentCount);
-    final allStudents = classes.expand((c) => c.students).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,7 +118,7 @@ class _ClassManagementBody extends ConsumerWidget {
         // ── Content area ──
         Expanded(
           child: segmentIndex == 0
-              ? _StudentsTab(classes: classes, allStudents: allStudents)
+              ? _StudentsTab(classes: classes)
               : _AttendanceTab(classes: classes),
         ),
       ],
@@ -201,17 +200,30 @@ class _Segment extends StatelessWidget {
 }
 
 // ─── Students Tab ───
+// Groups students by class with a section header above each class's rows.
+// A student enrolled in multiple classes will appear under each one — correct.
 class _StudentsTab extends StatelessWidget {
-  const _StudentsTab({required this.classes, required this.allStudents});
+  const _StudentsTab({required this.classes});
   final List<TeacherClass> classes;
-  final List<ClassStudent> allStudents;
 
   @override
   Widget build(BuildContext context) {
+    final hasStudents = classes.any((c) => c.students.isNotEmpty);
+
+    // Build a flat list of items: each class contributes a header + N rows.
+    // Items are either _ClassHeader or ClassStudent (with the class name attached).
+    final List<_StudentListItem> items = [];
+    for (final cls in classes) {
+      items.add(_ClassHeader(className: cls.name, studentCount: cls.studentCount));
+      for (final student in cls.students) {
+        items.add(_StudentEntry(student: student, className: cls.name));
+      }
+    }
+
     return Column(
       children: [
         Expanded(
-          child: allStudents.isEmpty
+          child: !hasStudents
               ? Center(
                   child: Text(
                     'No students enrolled yet',
@@ -223,16 +235,25 @@ class _StudentsTab extends StatelessWidget {
                 )
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-                  itemCount: allStudents.length,
+                  itemCount: items.length,
                   itemBuilder: (context, index) {
-                    final student = allStudents[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _StudentRow(
-                        student: student,
-                        onMoreTap: () => _showStudentDetail(context, student),
-                      ),
-                    );
+                    final item = items[index];
+                    if (item is _ClassHeader) {
+                      return _ClassSectionHeader(
+                        className: item.className,
+                        studentCount: item.studentCount,
+                      );
+                    } else if (item is _StudentEntry) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _StudentRow(
+                          student: item.student,
+                          onMoreTap: () =>
+                              _showStudentDetail(context, item.student),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
                   },
                 ),
         ),
@@ -271,10 +292,11 @@ class _StudentsTab extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _detailItem('Grade', student.grade),
-            _detailItem('Average Score', '${student.averageScore.toStringAsFixed(0)}%'),
-            _detailItem('Attendance Rate', '${student.attendanceRate.toStringAsFixed(0)}%'),
+            _detailItem(context, 'Grade', student.grade),
+            _detailItem(context, 'Average Score', '${student.averageScore.toStringAsFixed(0)}%'),
+            _detailItem(context, 'Attendance Rate', '${student.attendanceRate.toStringAsFixed(0)}%'),
             _detailItem(
+              context,
               'Learning Goals',
               student.learningGoals.isEmpty
                   ? 'No learning goals recorded'
@@ -292,7 +314,7 @@ class _StudentsTab extends StatelessWidget {
     );
   }
 
-  Widget _detailItem(String label, String value) {
+  Widget _detailItem(BuildContext context, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: RichText(
@@ -306,6 +328,59 @@ class _StudentsTab extends StatelessWidget {
             TextSpan(text: value),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── List item types for grouped student list ───
+abstract class _StudentListItem {}
+
+class _ClassHeader extends _StudentListItem {
+  final String className;
+  final int studentCount;
+  _ClassHeader({required this.className, required this.studentCount});
+}
+
+class _StudentEntry extends _StudentListItem {
+  final ClassStudent student;
+  final String className;
+  _StudentEntry({required this.student, required this.className});
+}
+
+// ─── Class section header widget ───
+class _ClassSectionHeader extends StatelessWidget {
+  const _ClassSectionHeader({
+    required this.className,
+    required this.studentCount,
+  });
+  final String className;
+  final int studentCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      child: Row(
+        children: [
+          Text(
+            className.toUpperCase(),
+            style: GoogleFonts.figtree(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.grey,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$studentCount/${studentCount > 0 ? studentCount : 0}',
+            style: GoogleFonts.figtree(
+              fontSize: 12,
+              color: AppColors.grey,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -713,9 +788,9 @@ class _AttendanceSheetState extends ConsumerState<_AttendanceSheet> {
 
           const SizedBox(height: 20),
 
-          // Save button
+          // Save button — shows 'Saving…' while in-flight; shows error SnackBar on failure
           PillButton(
-            label: 'Save attendance',
+            label: _isSaving ? 'Saving…' : 'Save attendance',
             onPressed: _isSaving
                 ? null
                 : () async {
@@ -726,8 +801,25 @@ class _AttendanceSheetState extends ConsumerState<_AttendanceSheet> {
                             _attendance,
                           );
                       if (context.mounted) Navigator.pop(context);
+                    } catch (e) {
+                      if (mounted) {
+                        setState(() => _isSaving = false);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Failed to save attendance: $e',
+                                style: GoogleFonts.figtree(fontSize: 13),
+                              ),
+                              backgroundColor: Colors.red.shade700,
+                            ),
+                          );
+                        }
+                      }
                     } finally {
-                      if (mounted) setState(() => _isSaving = false);
+                      if (mounted && _isSaving) {
+                        setState(() => _isSaving = false);
+                      }
                     }
                   },
           ),

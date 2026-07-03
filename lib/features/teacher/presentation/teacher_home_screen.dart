@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/capsule_tab_bar.dart';
@@ -7,6 +8,8 @@ import '../../../core/widgets/soft_card.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../profile/domain/user_profile_repository.dart';
+import '../../library/domain/library_provider.dart';
+import '../../library/domain/models.dart';
 import '../domain/class_repository.dart';
 import 'class_management_screen.dart';
 
@@ -64,6 +67,7 @@ class _TeacherDashboard extends ConsumerWidget {
     final profile = ref.watch(currentUserProfileProvider).asData?.value;
     final firstName = profile?.firstName ?? 'Teacher';
     final classesAsync = ref.watch(teacherClassesProvider);
+    final coursesAsync = ref.watch(teacherCoursesProvider);
 
     return SafeArea(
       child: CustomScrollView(
@@ -127,6 +131,19 @@ class _TeacherDashboard extends ConsumerWidget {
                   (sum, c) => sum + c.studentCount,
                 );
 
+                // Derive lessons count from teacherCoursesProvider
+                final lessonsValue = coursesAsync.when(
+                  data: (courses) {
+                    final total = courses.fold<int>(
+                      0,
+                      (sum, c) => sum + c.lessons.length,
+                    );
+                    return '$total';
+                  },
+                  loading: () => '…',
+                  error: (e, _) => '--',
+                );
+
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                   child: Row(
@@ -147,10 +164,10 @@ class _TeacherDashboard extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: _StatTile(
-                          icon: Icons.menu_book,
-                          value: '--',
+                          icon: Icons.menu_book_outlined,
+                          value: lessonsValue,
                           label: 'Lessons',
                         ),
                       ),
@@ -312,9 +329,125 @@ class _TeacherDashboard extends ConsumerWidget {
               ),
             ),
           ),
+
+          // ── "My courses" section (only shown when there are courses) ──
+          SliverToBoxAdapter(
+            child: coursesAsync.when(
+              data: (courses) {
+                if (courses.isEmpty) return const SizedBox.shrink();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Section header
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      child: Text(
+                        'My courses',
+                        style: GoogleFonts.figtree(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textBody,
+                        ),
+                      ),
+                    ),
+                    // Horizontal scroll of course cards
+                    SizedBox(
+                      height: 172,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                        itemCount: courses.length,
+                        separatorBuilder: (context, _) => const SizedBox(width: 12),
+                        itemBuilder: (context, i) {
+                          final course = courses[i];
+                          final tint = AppColors.subjectTints[
+                              i % AppColors.subjectTints.length];
+                          return SoftCard(
+                            radius: 18,
+                            padding: const EdgeInsets.all(12),
+                            onTap: () {
+                              ref
+                                  .read(selectedCourseProvider.notifier)
+                                  .state = course;
+                              context.push('/library/course-details');
+                            },
+                            child: SizedBox(
+                              width: 200,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Subject tile
+                                  Container(
+                                    height: 48,
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      color: tint,
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Icon(
+                                      _subjectIcon(course.subject),
+                                      color: Colors.white,
+                                      size: 22,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  // Course title
+                                  Text(
+                                    course.title,
+                                    style: GoogleFonts.figtree(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textBody,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const Spacer(),
+                                  // Lessons count
+                                  Text(
+                                    '${course.lessons.length} lessons',
+                                    style: GoogleFonts.figtree(
+                                      fontSize: 12,
+                                      color: AppColors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                );
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (e, _) => const SizedBox.shrink(),
+            ),
+          ),
         ],
       ),
     );
+  }
+}
+
+// ─── Subject icon helper (mirrors home_screen.dart) ───
+IconData _subjectIcon(CourseSubject subject) {
+  switch (subject) {
+    case CourseSubject.math:
+      return Icons.calculate;
+    case CourseSubject.science:
+      return Icons.science;
+    case CourseSubject.english:
+      return Icons.menu_book;
+    case CourseSubject.amharic:
+      return Icons.translate;
+    case CourseSubject.socialStudies:
+      return Icons.public;
+    case CourseSubject.other:
+      return Icons.school;
   }
 }
 
