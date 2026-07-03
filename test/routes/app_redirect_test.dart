@@ -31,6 +31,7 @@ void main() {
       expect(redirect('/admin/management'), '/onboarding/intro');
     });
     test('auth routes stay reachable', () => expect(redirect('/login'), null));
+    test('intro stays put', () => expect(redirect('/onboarding/intro'), null));
   });
 
   group('authenticated, onboarding incomplete', () {
@@ -43,6 +44,7 @@ void main() {
       expect(redirect('/onboarding', authed: true), null);
       expect(redirect('/onboarding/grade', authed: true), null);
     });
+    test('explicit none role treated as incomplete', () => expect(redirect('/home', authed: true, role: UserRole.none), '/onboarding'));
   });
 
   group('completed profiles land on role home', () {
@@ -57,6 +59,7 @@ void main() {
     test('admin', () {
       expect(redirect('/', authed: true, role: UserRole.admin), '/admin/management');
     });
+    test('otp bounces authed student home', () => expect(redirect('/otp', authed: true, role: UserRole.student), '/home'));
   });
 
   group('role guards', () {
