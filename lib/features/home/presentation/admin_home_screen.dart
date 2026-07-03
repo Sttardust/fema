@@ -4,10 +4,17 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/soft_card.dart';
+import '../../auth/domain/auth_repository.dart';
 import '../../library/domain/library_provider.dart';
 
 class AdminHomeScreen extends ConsumerWidget {
   const AdminHomeScreen({super.key});
+
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    await ref.read(authRepositoryProvider).signOut();
+    if (!context.mounted) return;
+    context.go('/');
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -127,6 +134,12 @@ class AdminHomeScreen extends ConsumerWidget {
                       label: 'Analytics',
                       onTap: () => context.push('/admin/analytics'),
                     ),
+                    const _RowDivider(),
+                    _NavRow(
+                      icon: Icons.person_outline,
+                      label: 'Profile',
+                      onTap: () => context.push('/profile'),
+                    ),
                   ],
                 ),
               ),
@@ -160,6 +173,35 @@ class AdminHomeScreen extends ConsumerWidget {
                       ),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // ── Sign out ──
+              GestureDetector(
+                onTap: () => _signOut(context, ref),
+                child: Container(
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(26),
+                    border: Border.all(color: const Color(0xFFF1D7D7)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.logout, size: 16, color: AppColors.error),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Sign out',
+                        style: GoogleFonts.figtree(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
