@@ -10,6 +10,7 @@ import '../../library/domain/models.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../auth/domain/auth_repository.dart';
 import '../../profile/domain/user_profile_repository.dart';
+import '../../../core/theme/subject_visuals.dart';
 import '../../../core/widgets/capsule_tab_bar.dart';
 import '../../../core/widgets/soft_card.dart';
 
@@ -414,23 +415,6 @@ class _EmptyCoursesState extends StatelessWidget {
   }
 }
 
-IconData _subjectIcon(CourseSubject subject) {
-  switch (subject) {
-    case CourseSubject.math:
-      return Icons.calculate;
-    case CourseSubject.science:
-      return Icons.science;
-    case CourseSubject.english:
-      return Icons.menu_book;
-    case CourseSubject.amharic:
-      return Icons.translate;
-    case CourseSubject.socialStudies:
-      return Icons.public;
-    case CourseSubject.other:
-      return Icons.school;
-  }
-}
-
 class _CourseGridCard extends StatelessWidget {
   final Course course;
   final int index;
@@ -444,7 +428,7 @@ class _CourseGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tint = AppColors.subjectTints[index % AppColors.subjectTints.length];
+    final tint = subjectTint(course.subject);
 
     return SoftCard(
       radius: 20,
@@ -463,7 +447,7 @@ class _CourseGridCard extends StatelessWidget {
             ),
             alignment: Alignment.center,
             child: Icon(
-              _subjectIcon(course.subject),
+              subjectIcon(course.subject),
               color: Colors.white,
               size: 30,
             ),

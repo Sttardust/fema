@@ -3,13 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/subject_visuals.dart';
 import '../../../core/widgets/capsule_tab_bar.dart';
 import '../../../core/widgets/soft_card.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../profile/domain/user_profile_repository.dart';
 import '../../library/domain/library_provider.dart';
-import '../../library/domain/models.dart';
 import '../domain/class_repository.dart';
 import 'class_management_screen.dart';
 
@@ -246,7 +246,7 @@ class _TeacherDashboard extends ConsumerWidget {
                   child: Column(
                     children: List.generate(classes.length, (i) {
                       final cls = classes[i];
-                      final tint = AppColors.subjectTints[i % AppColors.subjectTints.length];
+                      final tint = AppColors.subjectTints[i % AppColors.subjectTints.length]; // classes have no subject field
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: SoftCard(
@@ -360,8 +360,7 @@ class _TeacherDashboard extends ConsumerWidget {
                         separatorBuilder: (context, _) => const SizedBox(width: 12),
                         itemBuilder: (context, i) {
                           final course = courses[i];
-                          final tint = AppColors.subjectTints[
-                              i % AppColors.subjectTints.length];
+                          final tint = subjectTint(course.subject);
                           return SoftCard(
                             radius: 18,
                             padding: const EdgeInsets.all(12),
@@ -386,7 +385,7 @@ class _TeacherDashboard extends ConsumerWidget {
                                     ),
                                     alignment: Alignment.center,
                                     child: Icon(
-                                      _subjectIcon(course.subject),
+                                      subjectIcon(course.subject),
                                       color: Colors.white,
                                       size: 22,
                                     ),
@@ -430,24 +429,6 @@ class _TeacherDashboard extends ConsumerWidget {
         ],
       ),
     );
-  }
-}
-
-// ─── Subject icon helper (mirrors home_screen.dart) ───
-IconData _subjectIcon(CourseSubject subject) {
-  switch (subject) {
-    case CourseSubject.math:
-      return Icons.calculate;
-    case CourseSubject.science:
-      return Icons.science;
-    case CourseSubject.english:
-      return Icons.menu_book;
-    case CourseSubject.amharic:
-      return Icons.translate;
-    case CourseSubject.socialStudies:
-      return Icons.public;
-    case CourseSubject.other:
-      return Icons.school;
   }
 }
 

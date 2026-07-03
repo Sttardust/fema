@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/circle_icon_button.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/pill_text_field.dart';
 import '../../onboarding/domain/onboarding_provider.dart';
@@ -87,29 +88,9 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
                 // Back button
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: GestureDetector(
+                  child: CircleIconButton(
+                    icon: Icons.chevron_left,
                     onTap: () => context.pop(),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        color: AppColors.surface,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.cardShadow,
-                            blurRadius: 18,
-                            offset: Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.chevron_left,
-                        color: AppColors.textBody,
-                        size: 22,
-                      ),
-                    ),
                   ),
                 ),
                 const SizedBox(height: 24),

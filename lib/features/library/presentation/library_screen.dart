@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/subject_visuals.dart';
 import '../../../core/widgets/soft_card.dart';
 import '../domain/library_provider.dart';
 import '../domain/models.dart';
@@ -147,7 +148,6 @@ class LibraryScreen extends ConsumerWidget {
                     final course = filtered[index];
                     return _LibraryCourseRow(
                       course: course,
-                      index: index,
                       onTap: () {
                         ref.read(selectedCourseProvider.notifier).state =
                             course;
@@ -192,25 +192,6 @@ class LibraryScreen extends ConsumerWidget {
   }
 }
 
-// ── Private helpers ──────────────────────────────────────────────────────────
-
-IconData _subjectIcon(CourseSubject subject) {
-  switch (subject) {
-    case CourseSubject.math:
-      return Icons.calculate;
-    case CourseSubject.science:
-      return Icons.science;
-    case CourseSubject.english:
-      return Icons.menu_book;
-    case CourseSubject.amharic:
-      return Icons.translate;
-    case CourseSubject.socialStudies:
-      return Icons.public;
-    case CourseSubject.other:
-      return Icons.school;
-  }
-}
-
 // ── Empty state ───────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
@@ -238,19 +219,16 @@ class _EmptyState extends StatelessWidget {
 
 class _LibraryCourseRow extends StatelessWidget {
   final Course course;
-  final int index;
   final VoidCallback onTap;
 
   const _LibraryCourseRow({
     required this.course,
-    required this.index,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final tint =
-        AppColors.subjectTints[index % AppColors.subjectTints.length];
+    final tint = subjectTint(course.subject);
 
     return SoftCard(
       radius: 18,
@@ -268,7 +246,7 @@ class _LibraryCourseRow extends StatelessWidget {
             ),
             alignment: Alignment.center,
             child: Icon(
-              _subjectIcon(course.subject),
+              subjectIcon(course.subject),
               color: Colors.white,
               size: 24,
             ),

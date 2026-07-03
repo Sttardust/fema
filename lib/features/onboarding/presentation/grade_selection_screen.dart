@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/circle_icon_button.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../domain/onboarding_provider.dart';
 
@@ -119,28 +120,9 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
               ),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: GestureDetector(
+                child: CircleIconButton(
+                  icon: Icons.chevron_left,
                   onTap: () => context.pop(),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      shape: BoxShape.circle,
-                      boxShadow: const [
-                        BoxShadow(
-                          color: AppColors.cardShadow,
-                          blurRadius: 18,
-                          offset: Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.chevron_left,
-                      color: AppColors.textBody,
-                      size: 24,
-                    ),
-                  ),
                 ),
               ),
             ),

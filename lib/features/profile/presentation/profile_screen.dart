@@ -284,7 +284,7 @@ class _ProfileBody extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(26),
-                  border: Border.all(color: const Color(0xFFF1D7D7)),
+                  border: Border.all(color: AppColors.dangerBorder),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

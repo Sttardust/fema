@@ -39,6 +39,9 @@ class AppColors {
   static const Color errorSoft = Color(0xFFFDF2F2);
   static const Color warning = Color(0xFFE5A63C);
 
+  // Border for danger-zone cards and the sign-out row.
+  static const Color dangerBorder = Color(0xFFF1D7D7);
+
   // Card shadow: #1C1633 at 5%
   static const Color cardShadow = Color(0x0D1C1633);
   // Primary button shadow: #4B0082 at 25%

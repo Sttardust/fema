@@ -811,7 +811,7 @@ class _AttendanceSheetState extends ConsumerState<_AttendanceSheet> {
                                 'Failed to save attendance: $e',
                                 style: GoogleFonts.figtree(fontSize: 13),
                               ),
-                              backgroundColor: Colors.red.shade700,
+                              backgroundColor: AppColors.error,
                             ),
                           );
                         }
