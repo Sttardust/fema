@@ -1,0 +1,7 @@
+# Copy to android/key.properties and fill in. NEVER commit the real file.
+# Generate the keystore with:
+#   keytool -genkey -v -keystore ~/fema-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias fema-upload
+storePassword=CHANGE_ME
+keyPassword=CHANGE_ME
+keyAlias=fema-upload
+storeFile=/absolute/path/to/fema-upload.jks
