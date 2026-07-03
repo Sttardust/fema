@@ -72,34 +72,42 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
     setState(() => _resendInFlight = true);
 
-    await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: widget.phoneNumber,
-      verificationCompleted: (PhoneAuthCredential credential) async {
-        await FirebaseAuth.instance.signInWithCredential(credential);
-      },
-      verificationFailed: (FirebaseAuthException e) {
-        if (!mounted) return;
-        setState(() => _resendInFlight = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authErrorMessage(e))),
-        );
-      },
-      codeSent: (String verificationId, int? resendToken) {
-        if (!mounted) return;
-        setState(() {
-          _verificationId = verificationId;
-          _resendInFlight = false;
-        });
-        _startCountdown();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Code sent!')),
-        );
-      },
-      codeAutoRetrievalTimeout: (String verificationId) {
-        if (!mounted) return;
-        setState(() => _verificationId = verificationId);
-      },
-    );
+    try {
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: widget.phoneNumber,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          await FirebaseAuth.instance.signInWithCredential(credential);
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          if (!mounted) return;
+          setState(() => _resendInFlight = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(authErrorMessage(e))),
+          );
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          if (!mounted) return;
+          setState(() {
+            _verificationId = verificationId;
+            _resendInFlight = false;
+          });
+          _startCountdown();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Code sent!')),
+          );
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          if (!mounted) return;
+          setState(() => _verificationId = verificationId);
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _resendInFlight = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authErrorMessage(e))),
+      );
+    }
   }
 
   Future<void> _verify(String pin) async {
@@ -162,8 +170,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     );
 
     final bool isCounting = _secondsRemaining > 0;
-    final String mm = '0';
-    final String ss = _secondsRemaining.toString().padLeft(2, '0');
+    final String mm = (_secondsRemaining ~/ 60).toString();
+    final String ss = (_secondsRemaining % 60).toString().padLeft(2, '0');
 
     return Scaffold(
       backgroundColor: AppColors.background,

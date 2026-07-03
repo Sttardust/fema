@@ -350,7 +350,6 @@ class _StudentHomePageState extends ConsumerState<_StudentHomePage> {
                     final course = filtered[index];
                     return _CourseGridCard(
                       course: course,
-                      index: index,
                       onTap: () {
                         ref.read(selectedCourseProvider.notifier).state =
                             course;
@@ -402,12 +401,10 @@ class _StudentHomePageState extends ConsumerState<_StudentHomePage> {
 
 class _CourseGridCard extends StatelessWidget {
   final Course course;
-  final int index;
   final VoidCallback onTap;
 
   const _CourseGridCard({
     required this.course,
-    required this.index,
     required this.onTap,
   });
 

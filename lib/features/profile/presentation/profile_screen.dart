@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../auth/domain/auth_repository.dart';
+import '../../auth/domain/auth_error_messages.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/soft_card.dart';
@@ -354,7 +355,7 @@ class _ProfileBody extends ConsumerWidget {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not send reset email: $e')),
+        SnackBar(content: Text(authErrorMessage(e))),
       );
     }
   }
