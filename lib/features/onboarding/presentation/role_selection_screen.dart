@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_logo.dart';
+import '../../../core/widgets/pill_button.dart';
 import '../domain/onboarding_provider.dart';
 
 class RoleSelectionScreen extends ConsumerStatefulWidget {
@@ -48,44 +48,36 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const AppLogoLockup(),
-                  const Spacer(),
-                  _LanguagePill(),
-                ],
-              ),
-              const SizedBox(height: 56),
-              const Text(
-                "Who's using FEMA today?",
-                style: TextStyle(
-                  fontSize: 26,
+              const SizedBox(height: 48),
+              Text(
+                'Who are you?',
+                style: GoogleFonts.figtree(
+                  fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textHeadline,
+                  color: AppColors.textBody,
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
-              const Text(
-                'Select your role to personalize your learning experience.',
-                style: TextStyle(
-                  fontSize: 15,
+              const SizedBox(height: 8),
+              Text(
+                'Choose your role so we can set up the right experience for you.',
+                style: GoogleFonts.figtree(
+                  fontSize: 14,
                   color: AppColors.grey,
-                  height: 1.4,
+                  height: 1.5,
                 ),
-                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 36),
               _RoleCard(
                 label: 'I am a Student',
+                description: 'Browse courses, watch lessons, and track your progress.',
+                icon: Icons.backpack_outlined,
                 role: UserRole.student,
                 selected: _selected == UserRole.student,
                 onTap: () => setState(() => _selected = UserRole.student),
@@ -93,18 +85,19 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               const SizedBox(height: 14),
               _RoleCard(
                 label: 'I am a Teacher',
+                description: 'Manage your classes, students, and attendance.',
+                icon: Icons.co_present_outlined,
                 role: UserRole.teacher,
                 selected: _selected == UserRole.teacher,
                 onTap: () => setState(() => _selected = UserRole.teacher),
               ),
               const Spacer(),
-              AppButton(
-                text: 'Continue',
+              PillButton(
+                label: 'Continue',
                 onPressed: (_selected == null || _isSubmitting) ? null : _onContinue,
-                backgroundColor:
-                    _selected == null ? AppColors.greyLight : AppColors.primary,
+                enabled: _selected != null && !_isSubmitting,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -115,12 +108,16 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
 class _RoleCard extends StatelessWidget {
   final String label;
+  final String description;
+  final IconData icon;
   final UserRole role;
   final bool selected;
   final VoidCallback onTap;
 
   const _RoleCard({
     required this.label,
+    required this.description,
+    required this.icon,
     required this.role,
     required this.selected,
     required this.onTap,
@@ -130,83 +127,77 @@ class _RoleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(20),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: selected ? AppColors.selectionFill : Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.greyLight,
-            width: selected ? 1.5 : 1,
-          ),
+          color: selected ? AppColors.primarySoft : AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: selected
+              ? Border.all(color: AppColors.primary, width: 1.5)
+              : null,
+          boxShadow: selected
+              ? null
+              : const [
+                  BoxShadow(
+                    color: AppColors.cardShadow,
+                    blurRadius: 18,
+                    offset: Offset(0, 6),
+                  ),
+                ],
         ),
         child: Row(
           children: [
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textHeadline,
-                ),
+            // Icon tile
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: selected ? AppColors.primary : AppColors.primarySoft,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: selected ? Colors.white : AppColors.primary,
               ),
             ),
-            _RadioDot(selected: selected),
+            const SizedBox(width: 14),
+            // Label + description
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: GoogleFonts.figtree(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textBody,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: GoogleFonts.figtree(
+                      fontSize: 12.5,
+                      color: AppColors.grey,
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Trailing state icon
+            Icon(
+              selected ? Icons.check_circle : Icons.circle_outlined,
+              size: 22,
+              color: selected ? AppColors.primary : AppColors.greyLight,
+            ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _RadioDot extends StatelessWidget {
-  final bool selected;
-  const _RadioDot({required this.selected});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 26,
-      height: 26,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: selected ? AppColors.primary : AppColors.greyLight,
-          width: selected ? 6 : 2,
-        ),
-        color: Colors.white,
-      ),
-    );
-  }
-}
-
-class _LanguagePill extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.greyLight),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.translate, size: 16, color: AppColors.textHeadline),
-          SizedBox(width: 6),
-          Text(
-            'English',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textHeadline,
-            ),
-          ),
-        ],
       ),
     );
   }
