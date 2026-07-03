@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../onboarding/domain/onboarding_provider.dart';
 import '../../library/presentation/library_screen.dart';
 import '../../library/domain/library_provider.dart';
 import '../../library/domain/models.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../auth/domain/auth_repository.dart';
-import '../../../core/widgets/app_logo.dart';
+import '../../profile/domain/user_profile_repository.dart';
+import '../../../core/widgets/capsule_tab_bar.dart';
+import '../../../core/widgets/soft_card.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -20,6 +22,7 @@ class HomeScreen extends ConsumerWidget {
     final isGuest = ref.watch(authStateProvider).asData?.value == null;
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: Column(
         children: [
           if (isGuest) const _GuestBanner(),
@@ -35,94 +38,26 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _NavBarItem(
-                  icon: Icons.home_outlined,
-                  activeIcon: Icons.home,
-                  label: 'Home',
-                  isActive: currentIndex == 0,
-                  onTap: () => ref.read(homeTabProvider.notifier).state = 0,
-                ),
-                _NavBarItem(
-                  icon: Icons.laptop_mac_outlined,
-                  activeIcon: Icons.laptop_mac,
-                  label: 'My Courses',
-                  isActive: currentIndex == 1,
-                  onTap: () => ref.read(homeTabProvider.notifier).state = 1,
-                ),
-                _NavBarItem(
-                  icon: Icons.person_outline,
-                  activeIcon: Icons.person,
-                  label: 'Profile',
-                  isActive: currentIndex == 2,
-                  onTap: () => ref.read(homeTabProvider.notifier).state = 2,
-                ),
-              ],
-            ),
+      bottomNavigationBar: CapsuleTabBar(
+        currentIndex: currentIndex,
+        onTap: (i) => ref.read(homeTabProvider.notifier).state = i,
+        items: const [
+          CapsuleTabItem(
+            icon: Icons.home_outlined,
+            activeIcon: Icons.home,
+            label: 'Home',
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavBarItem extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _NavBarItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? AppColors.primary : AppColors.grey,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                color: isActive ? AppColors.primary : AppColors.grey,
-              ),
-            ),
-          ],
-        ),
+          CapsuleTabItem(
+            icon: Icons.video_library_outlined,
+            activeIcon: Icons.video_library,
+            label: 'Library',
+          ),
+          CapsuleTabItem(
+            icon: Icons.person_outline,
+            activeIcon: Icons.person,
+            label: 'Profile',
+          ),
+        ],
       ),
     );
   }
@@ -134,37 +69,37 @@ class _GuestBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.primary.withValues(alpha: 0.08),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
-        child: SafeArea(
-          bottom: false,
+      color: AppColors.primarySoft,
+      child: SafeArea(
+        bottom: false,
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.primarySoft,
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Row(
             children: [
-              const Icon(Icons.info_outline, size: 18, color: AppColors.primary),
-              const SizedBox(width: 10),
+              const Icon(Icons.info_outline, size: 16, color: AppColors.primary),
+              const SizedBox(width: 8),
               const Expanded(
                 child: Text(
                   "You're browsing as a guest. Sign up to save your progress.",
                   style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textHeadline,
+                    fontSize: 12.5,
+                    color: AppColors.textBody,
                   ),
                 ),
               ),
-              TextButton(
-                onPressed: () => context.go('/signup'),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
+              GestureDetector(
+                onTap: () => context.go('/signup'),
                 child: const Text(
                   'Sign Up',
                   style: TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w700,
-                    fontSize: 13,
+                    fontSize: 12.5,
                   ),
                 ),
               ),
@@ -176,455 +111,397 @@ class _GuestBanner extends StatelessWidget {
   }
 }
 
-class _StudentHomePage extends ConsumerWidget {
+class _StudentHomePage extends ConsumerStatefulWidget {
   const _StudentHomePage();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_StudentHomePage> createState() => _StudentHomePageState();
+}
+
+class _StudentHomePageState extends ConsumerState<_StudentHomePage> {
+  int _selectedChip = 0;
+
+  static const _chips = ['All', 'Math', 'Science', 'English', 'Amharic'];
+
+  @override
+  Widget build(BuildContext context) {
     final coursesAsync = ref.watch(coursesProvider);
+    final isGuest = ref.watch(authStateProvider).asData?.value == null;
+    final profileAsync = ref.watch(currentUserProfileProvider);
+
+    String firstName = 'there';
+    if (!isGuest) {
+      final profile = profileAsync.asData?.value;
+      if (profile != null && (profile.firstName?.isNotEmpty ?? false)) {
+        firstName = profile.firstName!;
+      }
+    }
 
     return CustomScrollView(
       slivers: [
-        // Purple header: FEMA lockup + search field
         SliverToBoxAdapter(
-          child: _HomePurpleHeader(
-            onSearchTap: () => context.push('/home/search'),
-          ),
-        ),
-
-        // Filter chips
-        SliverToBoxAdapter(
-          child: _FilterChipsRow(),
-        ),
-
-          // Recommended Courses section
-          SliverToBoxAdapter(
+          child: SafeArea(
+            bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Recommended courses',
-                    style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+                  // 1. Header row
+                  Row(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: const BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: isGuest
+                            ? const Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 24,
+                              )
+                            : Text(
+                                firstName.isNotEmpty
+                                    ? firstName[0].toUpperCase()
+                                    : 'U',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isGuest
+                                ? 'Hi there \u{1F44B}'
+                                : 'Hi, $firstName \u{1F44B}',
+                            style: GoogleFonts.figtree(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textBody,
+                            ),
+                          ),
+                          Text(
+                            'What will you learn today?',
+                            style: GoogleFonts.figtree(
+                              fontSize: 13,
+                              color: AppColors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
+
+                  const SizedBox(height: 22),
+
+                  // 2. Search pill
                   GestureDetector(
-                    onTap: () => ref.read(homeTabProvider.notifier).state = 1,
-                    child: Text(
-                      'View all',
-                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary),
+                    onTap: () => context.push('/home/search'),
+                    child: Container(
+                      height: 52,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(26),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: AppColors.cardShadow,
+                            blurRadius: 18,
+                            offset: Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.search,
+                            size: 18,
+                            color: AppColors.grey,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Search courses, subjects…',
+                            style: GoogleFonts.figtree(
+                              fontSize: 14,
+                              color: AppColors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  // 4. Subject chips (horizontal scroll)
+                  SizedBox(
+                    height: 36,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _chips.length,
+                      separatorBuilder: (context2, idx) => const SizedBox(width: 8),
+                      itemBuilder: (context, i) {
+                        final active = _selectedChip == i;
+                        return GestureDetector(
+                          onTap: () => setState(() => _selectedChip = i),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 9,
+                            ),
+                            decoration: BoxDecoration(
+                              color: active ? AppColors.primary : AppColors.surface,
+                              borderRadius: BorderRadius.circular(18),
+                              border: active
+                                  ? null
+                                  : Border.all(color: AppColors.greyLight),
+                            ),
+                            child: Text(
+                              _chips[i],
+                              style: GoogleFonts.figtree(
+                                fontSize: 13,
+                                fontWeight: active
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                                color: active ? Colors.white : AppColors.grey,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  // 5. Section header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Popular courses',
+                        style: GoogleFonts.figtree(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textBody,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () =>
+                            ref.read(homeTabProvider.notifier).state = 1,
+                        child: Text(
+                          'See all',
+                          style: GoogleFonts.figtree(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
+        ),
 
-          // Recommended Courses Carousel
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 220,
-              child: coursesAsync.when(
-                data: (courses) {
-                  if (courses.isEmpty) {
-                    return _buildPlaceholderCards();
-                  }
-                  return ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: courses.length,
-                    itemBuilder: (context, index) => _CourseCard(
-                      course: courses[index],
+        // 6. Course grid
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          sliver: coursesAsync.when(
+            data: (courses) {
+              final filtered = _selectedChip == 0
+                  ? courses
+                  : courses
+                      .where((c) => _matchesChip(c, _selectedChip))
+                      .toList();
+
+              if (filtered.isEmpty) {
+                return const SliverToBoxAdapter(
+                  child: _EmptyCoursesState(),
+                );
+              }
+
+              return SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.78,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final course = filtered[index];
+                    return _CourseGridCard(
+                      course: course,
+                      index: index,
                       onTap: () {
-                        ref.read(selectedCourseProvider.notifier).state = courses[index];
+                        ref.read(selectedCourseProvider.notifier).state =
+                            course;
                         context.push('/library/course-details');
                       },
-                    ),
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (_, __) => _buildPlaceholderCards(),
-              ),
-            ),
-          ),
-
-          // New section
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'New',
-                    style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+                    );
+                  },
+                  childCount: filtered.length,
+                ),
+              );
+            },
+            loading: () => const SliverToBoxAdapter(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: CircularProgressIndicator(
+                    color: AppColors.primary,
                   ),
-                  GestureDetector(
-                    onTap: () => ref.read(homeTabProvider.notifier).state = 1,
-                    child: Text(
-                      'View all',
-                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-
-          // New Courses Horizontal List
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 220,
-              child: coursesAsync.when(
-                data: (courses) {
-                  if (courses.isEmpty) {
-                    return _buildPlaceholderCards();
-                  }
-                  // Show reversed list as "new" for demo
-                  final newCourses = courses.reversed.toList();
-                  return ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: newCourses.length,
-                    itemBuilder: (context, index) => _CourseCard(
-                      course: newCourses[index],
-                      onTap: () {
-                        ref.read(selectedCourseProvider.notifier).state = newCourses[index];
-                        context.push('/library/course-details');
-                      },
-                    ),
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (_, __) => _buildPlaceholderCards(),
-              ),
+            error: (err, stack) => const SliverToBoxAdapter(
+              child: _EmptyCoursesState(),
             ),
           ),
-
-        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        ),
       ],
     );
   }
 
-  Widget _buildPlaceholderCards() {
-    return ListView.builder(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: 3,
-      itemBuilder: (context, index) => const _PlaceholderCourseCard(),
-    );
+  bool _matchesChip(Course course, int chipIndex) {
+    switch (chipIndex) {
+      case 1:
+        return course.subject == CourseSubject.math;
+      case 2:
+        return course.subject == CourseSubject.science;
+      case 3:
+        return course.subject == CourseSubject.english;
+      case 4:
+        return course.subject == CourseSubject.amharic;
+      default:
+        return true;
+    }
   }
 }
 
-class _CourseCard extends StatelessWidget {
-  final Course course;
-  final VoidCallback onTap;
-
-  const _CourseCard({required this.course, required this.onTap});
+class _EmptyCoursesState extends StatelessWidget {
+  const _EmptyCoursesState();
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 200,
-        margin: const EdgeInsets.only(right: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.greyLight.withOpacity(0.5)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Thumbnail
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: Container(
-                height: 120,
-                width: double.infinity,
-                color: AppColors.primaryDark,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.network(
-                      course.thumbnailUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: AppColors.primaryDark,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                course.grade.toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.amber,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                course.subject.name.toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Play button overlay
-                    Positioned(
-                      right: 8,
-                      bottom: 8,
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.play_arrow,
-                          color: AppColors.primary,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Info
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Top Educators',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    "Get guidance from Ethiopia's best teachers.",
-                    style: AppTextStyles.caption.copyWith(fontSize: 11),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HomePurpleHeader extends StatelessWidget {
-  final VoidCallback onSearchTap;
-  const _HomePurpleHeader({required this.onSearchTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: const [
-                  AppLogoLockup(color: Colors.white),
-                  Spacer(),
-                  Icon(Icons.notifications_none,
-                      color: Colors.white, size: 26),
-                ],
-              ),
-              const SizedBox(height: 16),
-              InkWell(
-                onTap: onSearchTap,
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  height: 48,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.search, color: AppColors.grey, size: 22),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Search for courses',
-                          style: TextStyle(
-                            color: AppColors.grey,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      const Icon(Icons.tune, color: AppColors.grey, size: 22),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FilterChipsRow extends StatefulWidget {
-  @override
-  State<_FilterChipsRow> createState() => _FilterChipsRowState();
-}
-
-class _FilterChipsRowState extends State<_FilterChipsRow> {
-  static const _filters = ['All', 'Recommended', 'Tutorials', 'By Grade', 'By Subject'];
-  int _selected = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-        itemCount: _filters.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, i) {
-          final active = _selected == i;
-          return GestureDetector(
-            onTap: () => setState(() => _selected = i),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: active ? AppColors.primary : Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: active ? AppColors.primary : AppColors.greyLight,
-                ),
-              ),
-              child: Text(
-                _filters[i],
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: active ? Colors.white : AppColors.textHeadline,
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _PlaceholderCourseCard extends StatelessWidget {
-  const _PlaceholderCourseCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 200,
-      margin: const EdgeInsets.only(right: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.greyLight.withOpacity(0.5)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 40),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.school, size: 40, color: AppColors.greyLight),
+          SizedBox(height: 10),
+          Text(
+            'No courses yet',
+            style: TextStyle(fontSize: 14, color: AppColors.grey),
           ),
         ],
       ),
+    );
+  }
+}
+
+IconData _subjectIcon(CourseSubject subject) {
+  switch (subject) {
+    case CourseSubject.math:
+      return Icons.calculate;
+    case CourseSubject.science:
+      return Icons.science;
+    case CourseSubject.english:
+      return Icons.menu_book;
+    case CourseSubject.amharic:
+      return Icons.translate;
+    case CourseSubject.socialStudies:
+      return Icons.public;
+    case CourseSubject.other:
+      return Icons.school;
+  }
+}
+
+class _CourseGridCard extends StatelessWidget {
+  final Course course;
+  final int index;
+  final VoidCallback onTap;
+
+  const _CourseGridCard({
+    required this.course,
+    required this.index,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tint = AppColors.subjectTints[index % AppColors.subjectTints.length];
+
+    return SoftCard(
+      radius: 20,
+      padding: const EdgeInsets.all(12),
+      onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Thumbnail placeholder
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: Container(
-              height: 120,
-              width: double.infinity,
-              color: AppColors.primaryDark,
-              child: const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'ONLINE COURSE',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Icon(Icons.play_circle_outline, color: Colors.white54, size: 28),
-                  ],
-                ),
-              ),
+          // Thumbnail
+          Container(
+            height: 88,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: tint,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              _subjectIcon(course.subject),
+              color: Colors.white,
+              size: 30,
             ),
           ),
-          // Info placeholder
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Top Educators',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  "Get guidance from Ethiopia's best teachers.",
-                  style: AppTextStyles.caption.copyWith(fontSize: 11),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+
+          const SizedBox(height: 10),
+
+          // Title
+          Text(
+            course.title,
+            style: GoogleFonts.figtree(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textBody,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+
+          const SizedBox(height: 6),
+
+          // Meta
+          Row(
+            children: [
+              const Icon(
+                Icons.play_circle_outline,
+                size: 14,
+                color: AppColors.grey,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${course.lessons.length} lessons',
+                style: GoogleFonts.figtree(
+                  fontSize: 12,
+                  color: AppColors.grey,
+                ),
+              ),
+            ],
           ),
         ],
       ),
