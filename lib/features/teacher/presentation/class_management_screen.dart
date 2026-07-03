@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/soft_card.dart';
+import '../../../../core/widgets/pill_button.dart';
 import '../domain/class_models.dart';
 import '../domain/class_repository.dart';
+
+// ─── Local tab state (students=0, attendance=1) per-class ───
+final _classManagementTabProvider = StateProvider<int>((ref) => 0);
 
 class ClassManagementScreen extends ConsumerWidget {
   const ClassManagementScreen({super.key});
@@ -15,209 +19,508 @@ class ClassManagementScreen extends ConsumerWidget {
     final classesAsync = ref.watch(teacherClassesProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Class Management'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_add_alt_1_outlined),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Student enrollment flow is next to implement.')),
-              );
-            },
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        title: Text(
+          'Class Management',
+          style: GoogleFonts.figtree(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textBody,
           ),
-        ],
+        ),
+        centerTitle: false,
       ),
       body: classesAsync.when(
         data: (classes) {
           if (classes.isEmpty) {
-            return _EmptyState(onAddPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Create classes in Firestore to populate this screen.')),
-              );
-            });
+            return _EmptyState(
+              onAddPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Add class documents under the Firestore `classes` collection with a matching `teacherId`.',
+                    ),
+                  ),
+                );
+              },
+            );
           }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(AppConstants.space16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ClassStats(classes: classes),
-                const SizedBox(height: AppConstants.space24),
-                Text('Your Classes', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: AppConstants.space12),
-                _ClassList(classes: classes),
-                const SizedBox(height: AppConstants.space24),
-                Text('Recent Activity', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: AppConstants.space12),
-                _RecentActivity(classes: classes),
-              ],
-            ),
-          );
+          return _ClassManagementBody(classes: classes);
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Could not load classes: $error')),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+        error: (error, stack) => Center(
+          child: Text(
+            'Could not load classes: $error',
+            style: GoogleFonts.figtree(fontSize: 14, color: AppColors.grey),
+          ),
+        ),
       ),
     );
   }
 }
 
-class _ClassStats extends StatelessWidget {
-  const _ClassStats({required this.classes});
-
+// ─── Main body (classes exist) ───
+class _ClassManagementBody extends ConsumerWidget {
+  const _ClassManagementBody({required this.classes});
   final List<TeacherClass> classes;
 
   @override
-  Widget build(BuildContext context) {
-    final totalStudents = classes.fold<int>(0, (sum, item) => sum + item.studentCount);
-    final averageAttendance = classes.isEmpty
-        ? 0.0
-        : classes.fold<double>(0, (sum, item) => sum + item.attendanceRate) / classes.length;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final segmentIndex = ref.watch(_classManagementTabProvider);
 
-    return Row(
+    final totalStudents = classes.fold<int>(0, (sum, c) => sum + c.studentCount);
+    final allStudents = classes.expand((c) => c.students).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: _StatCard(
-            title: 'Students',
-            count: '$totalStudents',
-            icon: Icons.people_outline,
-            color: AppColors.primary,
+        // ── Stats summary ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: _SummaryTile(
+                  icon: Icons.school,
+                  value: '${classes.length}',
+                  label: 'Classes',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _SummaryTile(
+                  icon: Icons.people,
+                  value: '$totalStudents',
+                  label: 'Students',
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _StatCard(
-            title: 'Attendance',
-            count: '${averageAttendance.toStringAsFixed(0)}%',
-            icon: Icons.calendar_today_outlined,
-            color: Colors.green,
+
+        // ── Segmented control ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          child: _SegmentedControl(
+            currentIndex: segmentIndex,
+            onTap: (i) =>
+                ref.read(_classManagementTabProvider.notifier).state = i,
           ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // ── Content area ──
+        Expanded(
+          child: segmentIndex == 0
+              ? _StudentsTab(classes: classes, allStudents: allStudents)
+              : _AttendanceTab(classes: classes),
         ),
       ],
     );
   }
 }
 
-class _ClassList extends StatelessWidget {
-  const _ClassList({required this.classes});
+// ─── Segmented control ───
+class _SegmentedControl extends StatelessWidget {
+  const _SegmentedControl({
+    required this.currentIndex,
+    required this.onTap,
+  });
 
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.cardShadow,
+            blurRadius: 18,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          _Segment(label: 'Students', isActive: currentIndex == 0, onTap: () => onTap(0)),
+          _Segment(label: 'Attendance', isActive: currentIndex == 1, onTap: () => onTap(1)),
+        ],
+      ),
+    );
+  }
+}
+
+class _Segment extends StatelessWidget {
+  const _Segment({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: GoogleFonts.figtree(
+              fontSize: 13,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+              color: isActive ? Colors.white : AppColors.grey,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Students Tab ───
+class _StudentsTab extends StatelessWidget {
+  const _StudentsTab({required this.classes, required this.allStudents});
   final List<TeacherClass> classes;
+  final List<ClassStudent> allStudents;
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: classes.map((teacherClass) {
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.radius12),
-            side: BorderSide(color: AppColors.greyLight),
-          ),
-          child: Column(
-            children: [
-              ListTile(
-                contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                title: Text(
-                  teacherClass.name,
-                  style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  '${teacherClass.studentCount} Students • Avg Score: ${teacherClass.averageScore.toStringAsFixed(0)}%',
-                  style: AppTextStyles.caption,
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _showStudentDetails(context, teacherClass),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton.icon(
-                      onPressed: () => _showAttendanceDialog(context, teacherClass),
-                      icon: const Icon(Icons.check_circle_outline, size: 18),
-                      label: const Text('Take Attendance'),
+      children: [
+        Expanded(
+          child: allStudents.isEmpty
+              ? Center(
+                  child: Text(
+                    'No students enrolled yet',
+                    style: GoogleFonts.figtree(
+                      fontSize: 14,
+                      color: AppColors.grey,
                     ),
-                  ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                  itemCount: allStudents.length,
+                  itemBuilder: (context, index) {
+                    final student = allStudents[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _StudentRow(
+                        student: student,
+                        onMoreTap: () => _showStudentDetail(context, student),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        // ── Add student button ──
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            12,
+            20,
+            MediaQuery.of(context).padding.bottom + 12,
+          ),
+          child: PillButton(
+            label: 'Add student',
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Student enrollment flow is next to implement.'),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showStudentDetail(BuildContext context, ClassStudent student) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          student.name,
+          style: GoogleFonts.figtree(fontWeight: FontWeight.w700),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _detailItem('Grade', student.grade),
+            _detailItem('Average Score', '${student.averageScore.toStringAsFixed(0)}%'),
+            _detailItem('Attendance Rate', '${student.attendanceRate.toStringAsFixed(0)}%'),
+            _detailItem(
+              'Learning Goals',
+              student.learningGoals.isEmpty
+                  ? 'No learning goals recorded'
+                  : student.learningGoals.join(', '),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: RichText(
+        text: TextSpan(
+          style: GoogleFonts.figtree(fontSize: 13, color: AppColors.textBody),
+          children: [
+            TextSpan(
+              text: '$label: ',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            TextSpan(text: value),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StudentRow extends StatelessWidget {
+  const _StudentRow({required this.student, required this.onMoreTap});
+  final ClassStudent student;
+  final VoidCallback onMoreTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = student.name.isNotEmpty ? student.name[0].toUpperCase() : '?';
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.cardShadow,
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: AppColors.primarySoft,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              initial,
+              style: GoogleFonts.figtree(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  student.name,
+                  style: GoogleFonts.figtree(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textBody,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  student.grade,
+                  style: GoogleFonts.figtree(
+                    fontSize: 11.5,
+                    color: AppColors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: onMoreTap,
+            child: const Icon(
+              Icons.more_vert,
+              size: 20,
+              color: AppColors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Attendance Tab ───
+class _AttendanceTab extends StatelessWidget {
+  const _AttendanceTab({required this.classes});
+  final List<TeacherClass> classes;
+
+  @override
+  Widget build(BuildContext context) {
+    if (classes.isEmpty) {
+      return Center(
+        child: Text(
+          'No classes available',
+          style: GoogleFonts.figtree(fontSize: 14, color: AppColors.grey),
+        ),
+      );
+    }
+
+    // Show per-class attendance sections
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      itemCount: classes.length,
+      itemBuilder: (context, index) {
+        final cls = classes[index];
+        return _ClassAttendanceSection(teacherClass: cls);
+      },
+    );
+  }
+}
+
+class _ClassAttendanceSection extends StatelessWidget {
+  const _ClassAttendanceSection({required this.teacherClass});
+  final TeacherClass teacherClass;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final dateLabel =
+        '${now.day}/${now.month}/${now.year}';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Class name header
+          Text(
+            teacherClass.name,
+            style: GoogleFonts.figtree(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textBody,
+            ),
+          ),
+          const SizedBox(height: 6),
+          // Date row
+          Row(
+            children: [
+              const Icon(
+                Icons.calendar_today,
+                size: 16,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                dateLabel,
+                style: GoogleFonts.figtree(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textBody,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${teacherClass.studentCount} students',
+                style: GoogleFonts.figtree(
+                  fontSize: 12,
+                  color: AppColors.grey,
                 ),
               ),
             ],
           ),
-        );
-      }).toList(),
+          const SizedBox(height: 10),
+          // Take attendance CTA
+          SoftCard(
+            radius: 16,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            onTap: () => _showAttendanceSheet(context, teacherClass),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Take attendance for ${teacherClass.name}',
+                  style: GoogleFonts.figtree(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const Spacer(),
+                const Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: AppColors.grey,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  void _showAttendanceDialog(BuildContext context, TeacherClass teacherClass) {
+  void _showAttendanceSheet(BuildContext context, TeacherClass teacherClass) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) => _AttendanceSheet(teacherClass: teacherClass),
     );
   }
-
-  void _showStudentDetails(BuildContext context, TeacherClass teacherClass) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => _StudentListSheet(teacherClass: teacherClass),
-    );
-  }
 }
 
-class _RecentActivity extends StatelessWidget {
-  const _RecentActivity({required this.classes});
-
-  final List<TeacherClass> classes;
-
-  @override
-  Widget build(BuildContext context) {
-    final activity = classes.take(3).map((teacherClass) {
-      return {
-        'msg': 'Loaded ${teacherClass.studentCount} students for ${teacherClass.name}',
-        'time': 'Live',
-      };
-    }).toList();
-
-    return Column(
-      children: activity.map((act) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.notifications_outlined, size: 16, color: AppColors.primary),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(act['msg']!, style: AppTextStyles.bodySmall),
-                    Text(act['time']!, style: AppTextStyles.caption.copyWith(color: AppColors.grey)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
+// ─── Attendance Sheet ───
 class _AttendanceSheet extends ConsumerStatefulWidget {
   const _AttendanceSheet({required this.teacherClass});
-
   final TeacherClass teacherClass;
 
   @override
@@ -230,172 +533,270 @@ class _AttendanceSheetState extends ConsumerState<_AttendanceSheet> {
   };
   bool _isSaving = false;
 
+  int get _markedCount =>
+      _attendance.values.where((v) => v).length;
+
   @override
   Widget build(BuildContext context) {
+    final students = widget.teacherClass.students;
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 20,
+        right: 20,
+        top: 20,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Attendance: ${widget.teacherClass.name}',
-                style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+          // Handle bar
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.greyLight,
+                borderRadius: BorderRadius.circular(2),
               ),
-              IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...widget.teacherClass.students.map((student) {
-            return SwitchListTile(
-              title: Text(student.name),
-              subtitle: Text(student.grade),
-              value: _attendance[student.id] ?? true,
-              onChanged: (val) => setState(() => _attendance[student.id] = val),
-              activeThumbColor: AppColors.primary,
-            );
-          }),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isSaving
-                  ? null
-                  : () async {
-                      setState(() => _isSaving = true);
-                      try {
-                        await ref.read(teacherClassRepositoryProvider).saveAttendance(
-                              widget.teacherClass.id,
-                              _attendance,
-                            );
-                        if (context.mounted) Navigator.pop(context);
-                      } finally {
-                        if (mounted) setState(() => _isSaving = false);
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: _isSaving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : const Text('Save Attendance', style: TextStyle(color: Colors.white)),
             ),
           ),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-}
+          const SizedBox(height: 16),
 
-class _StudentListSheet extends StatelessWidget {
-  const _StudentListSheet({required this.teacherClass});
-
-  final TeacherClass teacherClass;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Students: ${teacherClass.name}',
-                style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.teacherClass.name,
+                    style: GoogleFonts.figtree(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textBody,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  // Date + marked count row
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.calendar_today,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formattedToday(),
+                        style: GoogleFonts.figtree(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textBody,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        '$_markedCount of ${students.length} marked',
+                        style: GoogleFonts.figtree(
+                          fontSize: 12,
+                          color: AppColors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
             ],
           ),
+
           const SizedBox(height: 16),
+
+          // Student attendance rows
           ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.45),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.45,
+            ),
             child: ListView.separated(
-              itemCount: teacherClass.students.length,
-              separatorBuilder: (context, index) => const Divider(),
+              shrinkWrap: true,
+              itemCount: students.length,
+              separatorBuilder: (context2, _) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
-                final student = teacherClass.students[index];
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    student.name,
-                    style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+                final student = students[index];
+                final isPresent = _attendance[student.id] ?? true;
+                final initial = student.name.isNotEmpty
+                    ? student.name[0].toUpperCase()
+                    : '?';
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: AppColors.cardShadow,
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  subtitle: Text(
-                    'Avg Score: ${student.averageScore.toStringAsFixed(0)} • Attendance: ${student.attendanceRate.toStringAsFixed(0)}%',
-                    style: AppTextStyles.caption,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
                   ),
-                  trailing: TextButton(
-                    onPressed: () => _showDetailDialog(context, student),
-                    child: const Text('View Profile'),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          color: AppColors.primarySoft,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          initial,
+                          style: GoogleFonts.figtree(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              student.name,
+                              style: GoogleFonts.figtree(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textBody,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              student.grade,
+                              style: GoogleFonts.figtree(
+                                fontSize: 11.5,
+                                color: AppColors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => setState(
+                          () => _attendance[student.id] = !isPresent,
+                        ),
+                        child: Icon(
+                          isPresent
+                              ? Icons.check_circle
+                              : Icons.cancel_outlined,
+                          size: 24,
+                          color: isPresent ? AppColors.primary : AppColors.greyLight,
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
             ),
           ),
-          const SizedBox(height: 24),
+
+          const SizedBox(height: 20),
+
+          // Save button
+          PillButton(
+            label: 'Save attendance',
+            onPressed: _isSaving
+                ? null
+                : () async {
+                    setState(() => _isSaving = true);
+                    try {
+                      await ref.read(teacherClassRepositoryProvider).saveAttendance(
+                            widget.teacherClass.id,
+                            _attendance,
+                          );
+                      if (context.mounted) Navigator.pop(context);
+                    } finally {
+                      if (mounted) setState(() => _isSaving = false);
+                    }
+                  },
+          ),
+
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
         ],
       ),
     );
   }
 
-  void _showDetailDialog(BuildContext context, ClassStudent student) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(student.name),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _detailItem('Grade', student.grade),
-            _detailItem('Average Score', '${student.averageScore.toStringAsFixed(0)}%'),
-            _detailItem('Attendance Rate', '${student.attendanceRate.toStringAsFixed(0)}%'),
-            _detailItem(
-              'Learning Goals',
-              student.learningGoals.isEmpty ? 'No learning goals recorded' : student.learningGoals.join(', '),
+  String _formattedToday() {
+    final now = DateTime.now();
+    return '${now.day}/${now.month}/${now.year}';
+  }
+}
+
+// ─── Summary Tile ───
+class _SummaryTile extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+
+  const _SummaryTile({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SoftCard(
+      radius: 18,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: AppColors.primarySoft,
+              borderRadius: BorderRadius.circular(11),
             ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+            alignment: Alignment.center,
+            child: Icon(icon, color: AppColors.primary, size: 17),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: GoogleFonts.figtree(
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textBody,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: GoogleFonts.figtree(fontSize: 11.5, color: AppColors.grey),
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _detailItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: RichText(
-        text: TextSpan(
-          style: AppTextStyles.bodySmall.copyWith(color: Colors.black),
-          children: [
-            TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
-            TextSpan(text: value),
-          ],
-        ),
       ),
     );
   }
 }
 
+// ─── Empty State ───
 class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.onAddPressed});
-
   final VoidCallback onAddPressed;
 
   @override
@@ -406,61 +807,33 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.class_outlined, size: 64, color: AppColors.grey),
+            const Icon(Icons.school, size: 64, color: AppColors.greyLight),
             const SizedBox(height: 16),
             Text(
               'No classes found',
-              style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey, fontWeight: FontWeight.bold),
+              style: GoogleFonts.figtree(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.grey,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Add class documents under the Firestore `classes` collection with a matching `teacherId`.',
               textAlign: TextAlign.center,
-              style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey),
+              style: GoogleFonts.figtree(fontSize: 13, color: AppColors.grey),
             ),
-            const SizedBox(height: 20),
-            OutlinedButton.icon(
-              onPressed: onAddPressed,
-              icon: const Icon(Icons.info_outline),
-              label: const Text('Setup Hint'),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: PillButton.outlined(
+                label: 'Setup Hint',
+                icon: Icons.info_outline,
+                onPressed: onAddPressed,
+              ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.title,
-    required this.count,
-    required this.icon,
-    required this.color,
-  });
-
-  final String title;
-  final String count;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(AppConstants.radius12),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 12),
-          Text(count, style: AppTextStyles.headlineSmall.copyWith(color: color, fontWeight: FontWeight.bold)),
-          Text(title, style: AppTextStyles.caption.copyWith(color: AppColors.grey)),
-        ],
       ),
     );
   }
