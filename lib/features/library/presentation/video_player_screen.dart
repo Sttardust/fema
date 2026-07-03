@@ -55,16 +55,24 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen>
   }
 
   Future<void> _initVideo(Lesson lesson) async {
-    // Stop and dispose any running controller first.
-    _disposeVideoController();
+    // Fix 1: Bump request id FIRST so every call (including noUrl) invalidates
+    // any in-flight initialization from the previous lesson.
+    final myRequestId = ++_initRequestId;
 
     if (!LessonVideoController.isPlayableUrl(lesson.videoUrl)) {
+      // Fix 2: setState to the terminal state BEFORE disposing the old
+      // controller so the Chewie widget is already out of the tree when dispose
+      // runs.
       if (mounted) setState(() => _videoState = _VideoState.noUrl);
+      _disposeVideoController();
       return;
     }
 
-    final myRequestId = ++_initRequestId;
+    // Fix 2 (continued): transition to initializing state first, then dispose
+    // the old controller so the ready-state Chewie is removed from the tree
+    // before its underlying controller is disposed.
     if (mounted) setState(() => _videoState = _VideoState.initializing);
+    _disposeVideoController();
 
     final ctrl = LessonVideoController(lesson.videoUrl!);
     try {
@@ -80,6 +88,9 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen>
     } catch (_) {
       ctrl.dispose();
       if (!mounted || _initRequestId != myRequestId) return;
+      // Fix 3: Clear _loadedLessonId so re-selecting the same lesson retries
+      // initialization instead of being a no-op.
+      _loadedLessonId = null;
       setState(() => _videoState = _VideoState.error);
     }
   }
