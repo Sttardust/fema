@@ -89,6 +89,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (location == '/' || isAuthRoute || isOnboardingRoute) {
         if (profile!.role == UserRole.teacher) return '/teacher/home';
+        if (profile.role == UserRole.admin) return '/admin/management';
         return '/home';
       }
 
@@ -191,6 +192,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin/management',
         builder: (context, state) => const AdminHomeScreen(),
+      ),
+      GoRoute(
+        path: '/admin/users',
+        builder: (context, state) => const ManagementPlaceholderScreen(
+          title: 'Admin Console',
+          description: 'Manage user roles, site configurations, and system-wide reports.',
+          icon: Icons.admin_panel_settings_outlined,
+        ),
       ),
       GoRoute(
         path: '/admin/analytics',

@@ -119,7 +119,7 @@ class AdminHomeScreen extends ConsumerWidget {
                     _NavRow(
                       icon: Icons.people_outline,
                       label: 'Manage users',
-                      onTap: () => context.push('/admin/management'),
+                      onTap: () => context.push('/admin/users'),
                     ),
                     const _RowDivider(),
                     _NavRow(
