@@ -47,3 +47,4 @@ app.*.map.json
 /android/app/google-services.json
 design/pencil-backup-*/
 tool/node_modules/
+design/fema-design/clipboard/
