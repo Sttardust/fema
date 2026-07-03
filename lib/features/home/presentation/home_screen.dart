@@ -13,6 +13,7 @@ import '../../profile/domain/user_profile_repository.dart';
 import '../../../core/theme/subject_visuals.dart';
 import '../../../core/widgets/capsule_tab_bar.dart';
 import '../../../core/widgets/soft_card.dart';
+import '../../../core/widgets/state_views.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -330,7 +331,10 @@ class _StudentHomePageState extends ConsumerState<_StudentHomePage> {
 
               if (filtered.isEmpty) {
                 return const SliverToBoxAdapter(
-                  child: _EmptyCoursesState(),
+                  child: EmptyStateView(
+                    icon: Icons.school_outlined,
+                    message: 'No courses yet',
+                  ),
                 );
               }
 
@@ -368,8 +372,11 @@ class _StudentHomePageState extends ConsumerState<_StudentHomePage> {
                 ),
               ),
             ),
-            error: (err, stack) => const SliverToBoxAdapter(
-              child: _EmptyCoursesState(),
+            error: (err, stack) => SliverToBoxAdapter(
+              child: ErrorStateView(
+                message: "Couldn't load courses",
+                onRetry: () => ref.invalidate(coursesProvider),
+              ),
             ),
           ),
         ),
@@ -390,28 +397,6 @@ class _StudentHomePageState extends ConsumerState<_StudentHomePage> {
       default:
         return true;
     }
-  }
-}
-
-class _EmptyCoursesState extends StatelessWidget {
-  const _EmptyCoursesState();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 40),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.school, size: 40, color: AppColors.greyLight),
-          SizedBox(height: 10),
-          Text(
-            'No courses yet',
-            style: TextStyle(fontSize: 14, color: AppColors.grey),
-          ),
-        ],
-      ),
-    );
   }
 }
 

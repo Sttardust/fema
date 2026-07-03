@@ -5,8 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/subject_visuals.dart';
 import '../../../core/widgets/capsule_tab_bar.dart';
-import '../../../core/widgets/soft_card.dart';
 import '../../../core/widgets/pill_button.dart';
+import '../../../core/widgets/soft_card.dart';
+import '../../../core/widgets/state_views.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../profile/domain/user_profile_repository.dart';
 import '../../library/domain/library_provider.dart';
@@ -184,7 +185,36 @@ class _TeacherDashboard extends ConsumerWidget {
                   ),
                 ),
               ),
-              error: (e, _) => const SizedBox.shrink(),
+              error: (e, _) => Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: SoftCard(
+                  radius: 18,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.cloud_off_outlined, size: 16, color: AppColors.grey),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "Couldn't load stats",
+                          style: GoogleFonts.figtree(fontSize: 13, color: AppColors.grey),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => ref.invalidate(teacherClassesProvider),
+                        child: Text(
+                          'Retry',
+                          style: GoogleFonts.figtree(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
 
@@ -208,35 +238,14 @@ class _TeacherDashboard extends ConsumerWidget {
             child: classesAsync.when(
               data: (classes) {
                 if (classes.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.school,
-                          size: 40,
-                          color: AppColors.greyLight,
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'No classes yet',
-                          style: GoogleFonts.figtree(
-                            fontSize: 14,
-                            color: AppColors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 40),
-                          child: PillButton(
-                            label: 'Create a class',
-                            onPressed: () {
-                              ref.read(teacherTabProvider.notifier).state = 1;
-                            },
-                          ),
-                        ),
-                      ],
+                  return EmptyStateView(
+                    icon: Icons.school_outlined,
+                    message: 'No classes yet',
+                    action: PillButton(
+                      label: 'Create a class',
+                      onPressed: () {
+                        ref.read(teacherTabProvider.notifier).state = 1;
+                      },
                     ),
                   );
                 }
@@ -320,12 +329,9 @@ class _TeacherDashboard extends ConsumerWidget {
                   child: CircularProgressIndicator(color: AppColors.primary),
                 ),
               ),
-              error: (error, _) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Text(
-                  'Could not load classes',
-                  style: GoogleFonts.figtree(fontSize: 14, color: AppColors.grey),
-                ),
+              error: (error, _) => ErrorStateView(
+                message: "Couldn't load classes",
+                onRetry: () => ref.invalidate(teacherClassesProvider),
               ),
             ),
           ),
@@ -422,8 +428,45 @@ class _TeacherDashboard extends ConsumerWidget {
                   ],
                 );
               },
-              loading: () => const SizedBox.shrink(),
-              error: (e, _) => const SizedBox.shrink(),
+              loading: () => const Padding(
+                padding: EdgeInsets.fromLTRB(20, 0, 20, 24),
+                child: SizedBox(
+                  height: 60,
+                  child: Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  ),
+                ),
+              ),
+              error: (e, _) => Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                child: SoftCard(
+                  radius: 18,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.cloud_off_outlined, size: 16, color: AppColors.grey),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "Couldn't load courses",
+                          style: GoogleFonts.figtree(fontSize: 13, color: AppColors.grey),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => ref.invalidate(teacherCoursesProvider),
+                        child: Text(
+                          'Retry',
+                          style: GoogleFonts.figtree(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ],

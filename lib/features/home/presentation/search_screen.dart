@@ -8,6 +8,7 @@ import '../../../core/widgets/circle_icon_button.dart';
 import '../../library/domain/library_provider.dart';
 import '../../library/domain/models.dart';
 import '../../../core/widgets/soft_card.dart';
+import '../../../core/widgets/state_views.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -130,21 +131,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.search, size: 40, color: AppColors.greyLight),
-          const SizedBox(height: 12),
-          Text(
-            'Search for courses and subjects',
-            style: GoogleFonts.figtree(
-              fontSize: 14,
-              color: AppColors.grey,
-            ),
-          ),
-        ],
-      ),
+    return const EmptyStateView(
+      icon: Icons.search,
+      message: 'Search for courses and subjects',
     );
   }
 
@@ -158,22 +147,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             .toList();
 
         if (results.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.search_off,
-                    size: 40, color: AppColors.greyLight),
-                const SizedBox(height: 12),
-                Text(
-                  'No results for "$_query"',
-                  style: GoogleFonts.figtree(
-                    fontSize: 14,
-                    color: AppColors.grey,
-                  ),
-                ),
-              ],
-            ),
+          return EmptyStateView(
+            icon: Icons.search_off,
+            message: 'No results for "$_query"',
           );
         }
 
@@ -215,14 +191,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       loading: () => const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
       ),
-      error: (err, stack) => Center(
-        child: Text(
-          'Error loading results',
-          style: GoogleFonts.figtree(
-            fontSize: 14,
-            color: AppColors.grey,
-          ),
-        ),
+      error: (err, stack) => ErrorStateView(
+        message: "Couldn't load results",
+        onRetry: () => ref.invalidate(coursesProvider),
       ),
     );
   }

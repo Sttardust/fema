@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/subject_visuals.dart';
 import '../../../core/widgets/soft_card.dart';
+import '../../../core/widgets/state_views.dart';
 import '../domain/library_provider.dart';
 import '../domain/models.dart';
 
@@ -137,7 +138,10 @@ class LibraryScreen extends ConsumerWidget {
                         .toList();
 
                 if (filtered.isEmpty) {
-                  return const _EmptyState();
+                  return const EmptyStateView(
+                    icon: Icons.school_outlined,
+                    message: 'No courses yet',
+                  );
                 }
 
                 return ListView.separated(
@@ -160,14 +164,9 @@ class LibraryScreen extends ConsumerWidget {
               loading: () => const Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
-              error: (err, _) => Center(
-                child: Text(
-                  'Error: $err',
-                  style: GoogleFonts.figtree(
-                    fontSize: 14,
-                    color: AppColors.grey,
-                  ),
-                ),
+              error: (err, _) => ErrorStateView(
+                message: "Couldn't load courses",
+                onRetry: () => ref.invalidate(coursesProvider),
               ),
             ),
           ),
@@ -189,29 +188,6 @@ class LibraryScreen extends ConsumerWidget {
       default:
         return true;
     }
-  }
-}
-
-// ── Empty state ───────────────────────────────────────────────────────────────
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.school, size: 40, color: AppColors.greyLight),
-          SizedBox(height: 10),
-          Text(
-            'No courses yet',
-            style: TextStyle(fontSize: 14, color: AppColors.grey),
-          ),
-        ],
-      ),
-    );
   }
 }
 

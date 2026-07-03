@@ -7,6 +7,7 @@ import '../../../core/theme/subject_visuals.dart';
 import '../../../core/widgets/circle_icon_button.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/soft_card.dart';
+import '../../../core/widgets/state_views.dart';
 import '../domain/library_provider.dart';
 import '../domain/models.dart';
 
@@ -47,9 +48,16 @@ class _CourseDetailsScreenState extends ConsumerState<CourseDetailsScreen>
   Widget build(BuildContext context) {
     final course = ref.watch(selectedCourseProvider);
     if (course == null) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: AppColors.background,
-        body: Center(child: Text('No course selected')),
+        body: EmptyStateView(
+          icon: Icons.video_library_outlined,
+          message: 'No course selected',
+          action: PillButton(
+            label: 'Browse library',
+            onPressed: () => context.go('/home'),
+          ),
+        ),
       );
     }
 
@@ -422,11 +430,9 @@ class _CurriculumTab extends ConsumerWidget {
     final selectedLesson = ref.watch(selectedLessonProvider);
 
     if (lessons.isEmpty) {
-      return const Center(
-        child: Text(
-          'No lessons yet.',
-          style: TextStyle(fontSize: 14, color: AppColors.grey),
-        ),
+      return const EmptyStateView(
+        icon: Icons.school_outlined,
+        message: 'No lessons yet',
       );
     }
 

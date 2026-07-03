@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/circle_icon_button.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/soft_card.dart';
+import '../../../core/widgets/state_views.dart';
 import '../domain/lesson_video_controller.dart';
 import '../domain/library_provider.dart';
 import '../domain/models.dart';
@@ -124,7 +125,17 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen>
     });
 
     if (lesson == null || course == null) {
-      return const Scaffold(body: Center(child: Text('No lesson selected')));
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: EmptyStateView(
+          icon: Icons.video_library_outlined,
+          message: 'No lesson selected',
+          action: PillButton(
+            label: 'Browse library',
+            onPressed: () => context.go('/home'),
+          ),
+        ),
+      );
     }
 
     final lessons = course.lessons;

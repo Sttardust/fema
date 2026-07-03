@@ -103,8 +103,45 @@ class AdminHomeScreen extends ConsumerWidget {
                     ],
                   );
                 },
-                loading: () => const SizedBox.shrink(),
-                error: (e, _) => const SizedBox.shrink(),
+                loading: () => const Padding(
+                  padding: EdgeInsets.only(bottom: 28),
+                  child: SizedBox(
+                    height: 76,
+                    child: Center(
+                      child: CircularProgressIndicator(color: AppColors.primary),
+                    ),
+                  ),
+                ),
+                error: (e, _) => Padding(
+                  padding: const EdgeInsets.only(bottom: 28),
+                  child: SoftCard(
+                    radius: 18,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.cloud_off_outlined, size: 16, color: AppColors.grey),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Couldn't load stats",
+                            style: GoogleFonts.figtree(fontSize: 13, color: AppColors.grey),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => ref.invalidate(coursesProvider),
+                          child: Text(
+                            'Retry',
+                            style: GoogleFonts.figtree(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
 
               // ── MANAGEMENT group ──
