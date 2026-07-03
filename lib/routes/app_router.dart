@@ -21,6 +21,7 @@ import '../features/profile/presentation/profile_screen.dart';
 import '../features/profile/presentation/account_management_screen.dart';
 import '../features/profile/presentation/about_us_screen.dart';
 import '../features/home/presentation/management_placeholder_screen.dart';
+import '../features/home/presentation/admin_home_screen.dart';
 import '../features/teacher/presentation/class_management_screen.dart';
 import '../features/teacher/presentation/teacher_home_screen.dart';
 import '../features/profile/domain/user_profile_repository.dart';
@@ -88,6 +89,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (location == '/' || isAuthRoute || isOnboardingRoute) {
         if (profile!.role == UserRole.teacher) return '/teacher/home';
+        if (profile.role == UserRole.admin) return '/admin/management';
         return '/home';
       }
 
@@ -189,6 +191,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/admin/management',
+        builder: (context, state) => const AdminHomeScreen(),
+      ),
+      GoRoute(
+        path: '/admin/users',
         builder: (context, state) => const ManagementPlaceholderScreen(
           title: 'Admin Console',
           description: 'Manage user roles, site configurations, and system-wide reports.',

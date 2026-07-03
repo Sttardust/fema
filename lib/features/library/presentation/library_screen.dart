@@ -1,103 +1,232 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/soft_card.dart';
 import '../domain/library_provider.dart';
 import '../domain/models.dart';
+
+// ── Subject filter chips state ───────────────────────────────────────────────
+final _libraryChipProvider = StateProvider<int>((ref) => 0);
 
 class LibraryScreen extends ConsumerWidget {
   const LibraryScreen({super.key});
 
+  static const _chips = ['All', 'Math', 'Science', 'English', 'Amharic'];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final coursesAsync = ref.watch(coursesProvider);
+    final selectedChip = ref.watch(_libraryChipProvider);
 
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          title: Text(
-            'My Courses',
-            style: AppTextStyles.headlineSmall.copyWith(fontWeight: FontWeight.bold),
+    return SafeArea(
+      bottom: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header ──────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Text(
+              'Library',
+              style: GoogleFonts.figtree(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textBody,
+              ),
+            ),
           ),
-          centerTitle: true,
-          bottom: TabBar(
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.grey,
-            indicatorColor: AppColors.primary,
-            indicatorWeight: 3,
-            labelStyle: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
-            tabs: const [
-              Tab(text: 'Ongoing'),
-              Tab(text: 'Completed'),
-            ],
+
+          const SizedBox(height: 16),
+
+          // ── Search pill ─────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: GestureDetector(
+              onTap: () => context.push('/home/search'),
+              child: Container(
+                height: 52,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(26),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 18,
+                      offset: Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.search,
+                      size: 18,
+                      color: AppColors.grey,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Search courses, subjects…',
+                      style: GoogleFonts.figtree(
+                        fontSize: 14,
+                        color: AppColors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
-        body: TabBarView(
-          children: [
-            _buildCourseGrid(context, ref, coursesAsync, isCompleted: false),
-            _buildCourseGrid(context, ref, coursesAsync, isCompleted: true),
-          ],
-        ),
+
+          const SizedBox(height: 16),
+
+          // ── Subject filter chips ─────────────────────────────────────────
+          SizedBox(
+            height: 36,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              scrollDirection: Axis.horizontal,
+              itemCount: _chips.length,
+              separatorBuilder: (context2, idx) => const SizedBox(width: 8),
+              itemBuilder: (context, i) {
+                final active = selectedChip == i;
+                return GestureDetector(
+                  onTap: () =>
+                      ref.read(_libraryChipProvider.notifier).state = i,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: active ? AppColors.primary : AppColors.surface,
+                      borderRadius: BorderRadius.circular(18),
+                      border: active
+                          ? null
+                          : Border.all(color: AppColors.greyLight),
+                    ),
+                    child: Text(
+                      _chips[i],
+                      style: GoogleFonts.figtree(
+                        fontSize: 13,
+                        fontWeight:
+                            active ? FontWeight.w600 : FontWeight.w500,
+                        color: active ? Colors.white : AppColors.grey,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // ── Course list ──────────────────────────────────────────────────
+          Expanded(
+            child: coursesAsync.when(
+              data: (courses) {
+                final filtered = selectedChip == 0
+                    ? courses
+                    : courses
+                        .where((c) => _matchesChip(c, selectedChip))
+                        .toList();
+
+                if (filtered.isEmpty) {
+                  return const _EmptyState();
+                }
+
+                return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                  itemCount: filtered.length,
+                  separatorBuilder: (context2, idx) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final course = filtered[index];
+                    return _LibraryCourseRow(
+                      course: course,
+                      index: index,
+                      onTap: () {
+                        ref.read(selectedCourseProvider.notifier).state =
+                            course;
+                        context.push('/library/course-details');
+                      },
+                    );
+                  },
+                );
+              },
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+              error: (err, _) => Center(
+                child: Text(
+                  'Error: $err',
+                  style: GoogleFonts.figtree(
+                    fontSize: 14,
+                    color: AppColors.grey,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildCourseGrid(BuildContext context, WidgetRef ref, AsyncValue<List<Course>> coursesAsync, {required bool isCompleted}) {
-    return coursesAsync.when(
-      data: (courses) {
-        // For demo, we'll just show some courses as "ongoing" and empty for "completed"
-        // In a real app, this would filter based on user progress
-        final displayedCourses = isCompleted ? [] : courses;
-
-        if (displayedCourses.isEmpty) {
-          return _buildEmptyState(isCompleted);
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(20),
-          itemCount: displayedCourses.length,
-          itemBuilder: (context, index) {
-            final course = displayedCourses[index];
-            return _MyCourseCard(
-              course: course,
-              progress: 0.4 + (index * 0.1), // Mock progress
-              onTap: () {
-                ref.read(selectedCourseProvider.notifier).state = course;
-                context.push('/library/course-details');
-              },
-            );
-          },
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(child: Text('Error: $err')),
-    );
+  bool _matchesChip(Course course, int chipIndex) {
+    switch (chipIndex) {
+      case 1:
+        return course.subject == CourseSubject.math;
+      case 2:
+        return course.subject == CourseSubject.science;
+      case 3:
+        return course.subject == CourseSubject.english;
+      case 4:
+        return course.subject == CourseSubject.amharic;
+      default:
+        return true;
+    }
   }
+}
 
-  Widget _buildEmptyState(bool isCompleted) {
-    return Center(
+// ── Private helpers ──────────────────────────────────────────────────────────
+
+IconData _subjectIcon(CourseSubject subject) {
+  switch (subject) {
+    case CourseSubject.math:
+      return Icons.calculate;
+    case CourseSubject.science:
+      return Icons.science;
+    case CourseSubject.english:
+      return Icons.menu_book;
+    case CourseSubject.amharic:
+      return Icons.translate;
+    case CourseSubject.socialStudies:
+      return Icons.public;
+    case CourseSubject.other:
+      return Icons.school;
+  }
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            isCompleted ? Icons.workspace_premium_outlined : Icons.laptop_mac,
-            size: 80,
-            color: AppColors.greyLight,
-          ),
-          const SizedBox(height: 16),
+          Icon(Icons.school, size: 40, color: AppColors.greyLight),
+          SizedBox(height: 10),
           Text(
-            isCompleted ? 'No completed courses yet' : 'You haven\'t started any courses',
-            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            isCompleted ? 'Keep learning to earn certificates!' : 'Browse the library to find your first course.',
-            style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey),
+            'No courses yet',
+            style: TextStyle(fontSize: 14, color: AppColors.grey),
           ),
         ],
       ),
@@ -105,150 +234,83 @@ class LibraryScreen extends ConsumerWidget {
   }
 }
 
-class _MyCourseCard extends StatelessWidget {
+// ── Course row card ───────────────────────────────────────────────────────────
+
+class _LibraryCourseRow extends StatelessWidget {
   final Course course;
-  final double progress;
+  final int index;
   final VoidCallback onTap;
 
-  const _MyCourseCard({
+  const _LibraryCourseRow({
     required this.course,
-    required this.progress,
+    required this.index,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.greyLight.withOpacity(0.5)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    final tint =
+        AppColors.subjectTints[index % AppColors.subjectTints.length];
+
+    return SoftCard(
+      radius: 18,
+      padding: const EdgeInsets.all(12),
+      onTap: onTap,
+      child: Row(
+        children: [
+          // Flat colour thumbnail
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: tint,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              _subjectIcon(course.subject),
+              color: Colors.white,
+              size: 24,
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  // Thumbnail
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      bottomLeft: Radius.circular(16),
-                    ),
-                    child: Container(
-                      width: 120,
-                      height: 100,
-                      color: AppColors.primaryDark,
-                      child: Image.network(
-                        course.thumbnailUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Center(
-                          child: Icon(Icons.play_circle_fill, color: Colors.white, size: 32),
-                        ),
-                      ),
-                    ),
+
+          const SizedBox(width: 12),
+
+          // Info column
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  course.title,
+                  style: GoogleFonts.figtree(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textBody,
                   ),
-                  // Info
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              course.subject.name.toUpperCase(),
-                              style: AppTextStyles.caption.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            course.title,
-                            style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Grade ${course.grade}',
-                            style: AppTextStyles.caption.copyWith(color: AppColors.grey),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              // Progress Bar
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Progress',
-                          style: AppTextStyles.caption.copyWith(color: AppColors.grey),
-                        ),
-                        Text(
-                          '${(progress * 100).toInt()}%',
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      height: 6,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: AppColors.greyLight.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: FractionallySizedBox(
-                        alignment: Alignment.centerLeft,
-                        widthFactor: progress,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(3),
-                            gradient: const LinearGradient(
-                              colors: [AppColors.primary, AppColors.primaryLight],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  'Grade ${course.grade} · ${course.lessons.length} lessons',
+                  style: GoogleFonts.figtree(
+                    fontSize: 12,
+                    color: AppColors.grey,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+
+          const SizedBox(width: 8),
+
+          const Icon(
+            Icons.chevron_right,
+            size: 18,
+            color: AppColors.grey,
+          ),
+        ],
       ),
     );
   }

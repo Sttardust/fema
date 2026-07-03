@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_text_field.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/pill_button.dart';
+import '../../../core/widgets/pill_text_field.dart';
 import '../domain/auth_repository.dart';
 
 class PhoneLoginScreen extends ConsumerStatefulWidget {
@@ -25,6 +26,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
       await ref.read(authRepositoryProvider).verifyPhoneNumber(
         phoneNumber: phoneNumber,
         codeSent: (verificationId, resendToken) {
+          if (!mounted) return;
           context.push(
             '/otp',
             extra: {
@@ -34,6 +36,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
           );
         },
         verificationFailed: (e) {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(e.message ?? 'Verification failed')),
           );
@@ -43,57 +46,155 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
   }
 
   @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.space24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Welcome Back',
-                style: AppTextStyles.headlineMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppConstants.space8),
-              Text(
-                'Log in with your phone number. We will send a verification code.',
-                style: AppTextStyles.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppConstants.space32),
-              AppTextField(
-                controller: _phoneController,
-                hintText: '912345678',
-                labelText: 'Phone Number',
-                keyboardType: TextInputType.phone,
-                prefixIcon: const Icon(Icons.phone_outlined),
-                validator: (value) {
-                  if (value == null || value.length < 9) return 'Invalid phone number';
-                  return null;
-                },
-              ),
-              const SizedBox(height: AppConstants.space32),
-              AppButton(
-                text: 'Send Code',
-                onPressed: _onLogin,
-              ),
-              const SizedBox(height: AppConstants.space24),
-              TextButton(
-                onPressed: () => context.pushReplacement('/login'),
-                child: Text(
-                  'Switch to Email Login',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.space24,
+            vertical: AppConstants.space24,
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Back button
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                        color: AppColors.surface,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.cardShadow,
+                            blurRadius: 18,
+                            offset: Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.chevron_left,
+                        color: AppColors.textBody,
+                        size: 22,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 28),
+                // Title
+                Text(
+                  'Continue with phone',
+                  style: GoogleFonts.figtree(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textBody,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "We'll send a one-time code to verify your number.",
+                  style: GoogleFonts.figtree(
+                    fontSize: 14,
+                    color: AppColors.grey,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // Phone input row: country pill + number field
+                Row(
+                  children: [
+                    // Fixed country pill
+                    Container(
+                      height: 54,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(27),
+                        border: Border.all(color: AppColors.greyLight),
+                      ),
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('🇪🇹', style: TextStyle(fontSize: 16)),
+                          const SizedBox(width: 6),
+                          Text(
+                            '+251',
+                            style: GoogleFonts.figtree(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textBody,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Phone number field (focused = primary border)
+                    Expanded(
+                      child: PillTextField(
+                        hint: 'Phone number',
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        focused: true,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                // Send code button
+                PillButton(
+                  label: 'Send code',
+                  onPressed: _onLogin,
+                ),
+                const SizedBox(height: 20),
+                // Info note
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySoft,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Standard SMS rates may apply. The code expires after 10 minutes.',
+                          style: GoogleFonts.figtree(
+                            fontSize: 12.5,
+                            color: AppColors.textBody,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),)
+        ),
       ),
     );
   }

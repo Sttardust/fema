@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:pinput/pinput.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/pill_button.dart';
 import '../domain/auth_repository.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
@@ -26,92 +26,173 @@ class OtpScreen extends ConsumerStatefulWidget {
 class _OtpScreenState extends ConsumerState<OtpScreen> {
   final pinController = TextEditingController();
 
+  Future<void> _verify(String pin) async {
+    final credential = PhoneAuthProvider.credential(
+      verificationId: widget.verificationId,
+      smsCode: pin,
+    );
+    try {
+      await ref.read(authRepositoryProvider).signInWithCredential(credential);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid code. Please try again.')),
+        );
+      }
+      return;
+    }
+    if (mounted) {
+      context.go(widget.redirectPath);
+    }
+  }
+
+  @override
+  void dispose() {
+    pinController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Base pin box style
     final defaultPinTheme = PinTheme(
-      width: 56,
-      height: 60,
-      textStyle: AppTextStyles.headlineMedium,
+      width: double.infinity,
+      height: 58,
+      textStyle: GoogleFonts.figtree(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textBody,
+      ),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.greyLight),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.greyLight, width: 1.0),
+      ),
+    );
+
+    // Focused (cursor active) box
+    final focusedPinTheme = defaultPinTheme.copyWith(
+      decoration: defaultPinTheme.decoration!.copyWith(
+        border: Border.all(color: AppColors.primary, width: 1.5),
+      ),
+    );
+
+    // Box with a digit entered (same as focused but without needing focus)
+    final submittedPinTheme = defaultPinTheme.copyWith(
+      decoration: defaultPinTheme.decoration!.copyWith(
+        border: Border.all(color: AppColors.primary, width: 1.5),
       ),
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Verification')),
-      body: Padding(
-        padding: const EdgeInsets.all(AppConstants.space24),
-        child: Column(
-          children: [
-            const SizedBox(height: AppConstants.space24),
-            Text(
-              'Verification Code',
-              style: AppTextStyles.headlineMedium,
-            ),
-            const SizedBox(height: AppConstants.space8),
-            Text(
-              'Enter the 6-digit code sent to your phone.',
-              style: AppTextStyles.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppConstants.space48),
-            Pinput(
-              length: 6,
-              controller: pinController,
-              defaultPinTheme: defaultPinTheme,
-              focusedPinTheme: defaultPinTheme.copyWith(
-                decoration: defaultPinTheme.decoration!.copyWith(
-                  border: Border.all(color: AppColors.primary, width: 2),
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.space24,
+            vertical: AppConstants.space24,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Back button
+              Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: () => context.pop(),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: AppColors.surface,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.cardShadow,
+                          blurRadius: 18,
+                          offset: Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.chevron_left,
+                      color: AppColors.textBody,
+                      size: 22,
+                    ),
+                  ),
                 ),
               ),
-              onCompleted: (pin) async {
-                try {
-                  final credential = PhoneAuthProvider.credential(
-                    verificationId: widget.verificationId,
-                    smsCode: pin,
-                  );
-                  await ref.read(authRepositoryProvider).signInWithCredential(credential);
-                  if (!context.mounted) return;
-                  context.go(widget.redirectPath);
-                } catch (e) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Invalid code. Please try again.')),
-                  );
-                }
-              },
-            ),
-            const Spacer(),
-            AppButton(
-              text: 'Verify & Continue',
-              onPressed: () async {
-                if (pinController.text.length == 6) {
-                  try {
-                    final credential = PhoneAuthProvider.credential(
-                      verificationId: widget.verificationId,
-                      smsCode: pinController.text,
-                    );
-                    await ref.read(authRepositoryProvider).signInWithCredential(credential);
-                    if (!context.mounted) return;
-                    context.go(widget.redirectPath);
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Invalid code. Please try again.')),
-                    );
+              const SizedBox(height: 28),
+              // Title
+              Text(
+                'Verify your number',
+                style: GoogleFonts.figtree(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textBody,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Enter the 6-digit code sent to your phone.',
+                style: GoogleFonts.figtree(
+                  fontSize: 14,
+                  color: AppColors.grey,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 40),
+              // 6-box OTP input — each box Expanded via mainAxisSize in Pinput
+              Pinput(
+                length: 6,
+                controller: pinController,
+                defaultPinTheme: defaultPinTheme,
+                focusedPinTheme: focusedPinTheme,
+                submittedPinTheme: submittedPinTheme,
+                // Make all 6 boxes fill available width equally
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                onCompleted: (pin) => _verify(pin),
+              ),
+              const Spacer(),
+              // Resend row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Didn't get the code? ",
+                    style: GoogleFonts.figtree(fontSize: 13, color: AppColors.grey),
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 24),
+                    ),
+                    child: Text(
+                      'Resend',
+                      style: GoogleFonts.figtree(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Verify button
+              PillButton(
+                label: 'Verify',
+                onPressed: () {
+                  if (pinController.text.length == 6) {
+                    _verify(pinController.text);
                   }
-                }
-              },
-            ),
-            const SizedBox(height: AppConstants.space16),
-            TextButton(
-              onPressed: () {},
-              child: const Text('Resend Code'),
-            ),
-            const SizedBox(height: AppConstants.space32),
-          ],
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );

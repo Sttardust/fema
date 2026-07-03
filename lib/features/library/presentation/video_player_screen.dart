@@ -1,12 +1,18 @@
+import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/pill_button.dart';
+import '../../../core/widgets/soft_card.dart';
+import '../domain/lesson_video_controller.dart';
 import '../domain/library_provider.dart';
 import '../domain/models.dart';
 
-/// Watching-a-lesson screen. Three tabs (Note / Transcript / Up Next) below
-/// the video, and a Previous / Next bottom bar.
+/// Watching-a-lesson screen. Real video playback via LessonVideoController /
+/// Chewie. Three tabs (Notes / Transcript / Up Next) below the video, and a
+/// Previous / Next bottom bar.
 class VideoPlayerScreen extends ConsumerStatefulWidget {
   const VideoPlayerScreen({super.key});
 
@@ -17,8 +23,19 @@ class VideoPlayerScreen extends ConsumerStatefulWidget {
 class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _isPlaying = false;
-  double _progress = 0.4;
+
+  // Video lifecycle state
+  LessonVideoController? _videoController;
+  _VideoState _videoState = _VideoState.noUrl;
+
+  // Monotonically increasing request ID guards against stale async results
+  // when the lesson changes quickly.
+  int _initRequestId = 0;
+
+  /// The lesson ID whose video is currently loaded (or loading). Used in
+  /// didChangeDependencies to detect lesson changes without re-initializing on
+  /// every rebuild.
+  String? _loadedLessonId;
 
   @override
   void initState() {
@@ -27,15 +44,83 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final lesson = ref.read(selectedLessonProvider);
+    if (lesson == null) return;
+    if (_loadedLessonId != lesson.id) {
+      _loadedLessonId = lesson.id;
+      _initVideo(lesson);
+    }
+  }
+
+  Future<void> _initVideo(Lesson lesson) async {
+    // Fix 1: Bump request id FIRST so every call (including noUrl) invalidates
+    // any in-flight initialization from the previous lesson.
+    final myRequestId = ++_initRequestId;
+
+    if (!LessonVideoController.isPlayableUrl(lesson.videoUrl)) {
+      // Fix 2: setState to the terminal state BEFORE disposing the old
+      // controller so the Chewie widget is already out of the tree when dispose
+      // runs.
+      if (mounted) setState(() => _videoState = _VideoState.noUrl);
+      _disposeVideoController();
+      return;
+    }
+
+    // Fix 2 (continued): transition to initializing state first, then dispose
+    // the old controller so the ready-state Chewie is removed from the tree
+    // before its underlying controller is disposed.
+    if (mounted) setState(() => _videoState = _VideoState.initializing);
+    _disposeVideoController();
+
+    final ctrl = LessonVideoController(lesson.videoUrl!);
+    try {
+      await ctrl.initialize();
+      if (!mounted || _initRequestId != myRequestId) {
+        ctrl.dispose();
+        return;
+      }
+      setState(() {
+        _videoController = ctrl;
+        _videoState = _VideoState.ready;
+      });
+    } catch (_) {
+      ctrl.dispose();
+      if (!mounted || _initRequestId != myRequestId) return;
+      // Fix 3: Clear _loadedLessonId so re-selecting the same lesson retries
+      // initialization instead of being a no-op.
+      _loadedLessonId = null;
+      setState(() => _videoState = _VideoState.error);
+    }
+  }
+
+  void _disposeVideoController() {
+    _videoController?.dispose();
+    _videoController = null;
+  }
+
+  @override
   void dispose() {
     _tabController.dispose();
+    _disposeVideoController();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Watch providers so the widget rebuilds when lesson/course change.
     final lesson = ref.watch(selectedLessonProvider);
     final course = ref.watch(selectedCourseProvider);
+
+    // When the lesson changes, trigger a new video load (guarded by id check).
+    ref.listen<Lesson?>(selectedLessonProvider, (previous, next) {
+      if (next == null) return;
+      if (_loadedLessonId != next.id) {
+        _loadedLessonId = next.id;
+        _initVideo(next);
+      }
+    });
 
     if (lesson == null || course == null) {
       return const Scaffold(body: Center(child: Text('No lesson selected')));
@@ -45,220 +130,331 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen>
     final currentIndex = lessons.indexWhere((l) => l.id == lesson.id);
     final hasPrev = currentIndex > 0;
     final hasNext = currentIndex >= 0 && currentIndex < lessons.length - 1;
+    final lessonNumber = currentIndex >= 0 ? currentIndex + 1 : 1;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(56),
-        child: Container(
-          color: AppColors.primary,
-          child: SafeArea(
-            bottom: false,
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => context.pop(),
-                ),
-                Text(
-                  '${course.grade} ${_subjectLabel(course.subject)}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── 1. Top nav row ───────────────────────────────────────────────
+            _TopNavRow(
+              lessonNumber: lessonNumber,
+              totalLessons: lessons.length,
+              onBack: () => context.pop(),
+            ),
+            const SizedBox(height: 12),
+
+            // ── 2. Video area ────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: _VideoArea(
+                    videoState: _videoState,
+                    controller: _videoController,
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(height: 16),
+
+            // ── 3. Lesson heading ────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    lesson.title,
+                    style: GoogleFonts.figtree(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textBody,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${course.title} · ${course.grade}',
+                    style: GoogleFonts.figtree(
+                      fontSize: 13,
+                      color: AppColors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // ── 4. Chip tabs row ─────────────────────────────────────────────
+            _ChipTabRow(tabController: _tabController),
+            const SizedBox(height: 8),
+
+            // ── 5. Tab content ───────────────────────────────────────────────
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _NoteTab(lesson: lesson),
+                  _TranscriptTab(lesson: lesson),
+                  _UpNextTab(course: course, currentLesson: lesson),
+                ],
+              ),
+            ),
+
+            // ── 6. Bottom prev/next row ──────────────────────────────────────
+            _BottomNav(
+              hasPrev: hasPrev,
+              hasNext: hasNext,
+              onPrev: hasPrev
+                  ? () => ref.read(selectedLessonProvider.notifier).state =
+                      lessons[currentIndex - 1]
+                  : null,
+              onNext: hasNext
+                  ? () => ref.read(selectedLessonProvider.notifier).state =
+                      lessons[currentIndex + 1]
+                  : null,
+            ),
+          ],
         ),
       ),
-      body: Column(
+    );
+  }
+}
+
+// ─── Video area state enum ────────────────────────────────────────────────────
+
+enum _VideoState { noUrl, initializing, ready, error }
+
+// ─── Top nav row ──────────────────────────────────────────────────────────────
+
+class _TopNavRow extends StatelessWidget {
+  final int lessonNumber;
+  final int totalLessons;
+  final VoidCallback onBack;
+
+  const _TopNavRow({
+    required this.lessonNumber,
+    required this.totalLessons,
+    required this.onBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Row(
         children: [
-          _VideoPlayer(
-            course: course,
-            lesson: lesson,
-            isPlaying: _isPlaying,
-            progress: _progress,
-            onTogglePlay: () => setState(() => _isPlaying = !_isPlaying),
-            onScrub: (v) => setState(() => _progress = v),
+          // 40 px circular back button with surface fill + card shadow
+          _CircleNavButton(
+            icon: Icons.chevron_left,
+            onPressed: onBack,
           ),
-          const SizedBox(height: 12),
-          TabBar(
-            controller: _tabController,
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.grey,
-            indicatorColor: AppColors.primary,
-            indicatorWeight: 3,
-            indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-            unselectedLabelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-            tabs: const [
-              Tab(text: 'Note'),
-              Tab(text: 'Transcript'),
-              Tab(text: 'Up Next'),
-            ],
-          ),
+
+          // Centered label: "Lesson n of m"
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _NoteTab(lesson: lesson),
-                _TranscriptTab(lesson: lesson),
-                _UpNextTab(course: course, currentLesson: lesson),
-              ],
+            child: Center(
+              child: Text(
+                'Lesson $lessonNumber of $totalLessons',
+                style: GoogleFonts.figtree(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textBody,
+                ),
+              ),
             ),
           ),
-          _BottomNav(
-            hasPrev: hasPrev,
-            hasNext: hasNext,
-            onPrev: hasPrev
-                ? () => ref.read(selectedLessonProvider.notifier).state =
-                    lessons[currentIndex - 1]
-                : null,
-            onNext: hasNext
-                ? () => ref.read(selectedLessonProvider.notifier).state =
-                    lessons[currentIndex + 1]
-                : null,
+
+          // Spacer sized to match the back button so the label stays centered
+          const SizedBox(width: 40),
+        ],
+      ),
+    );
+  }
+}
+
+class _CircleNavButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _CircleNavButton({required this.icon, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cardShadow,
+            blurRadius: 18,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onPressed,
+          child: Icon(icon, size: 24, color: AppColors.textBody),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Video area ───────────────────────────────────────────────────────────────
+
+class _VideoArea extends StatelessWidget {
+  final _VideoState videoState;
+  final LessonVideoController? controller;
+
+  const _VideoArea({required this.videoState, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF211936),
+      child: switch (videoState) {
+        _VideoState.initializing => const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
+        _VideoState.ready => Chewie(controller: controller!.chewie!),
+        _VideoState.noUrl || _VideoState.error => _VideoUnavailable(),
+      },
+    );
+  }
+}
+
+class _VideoUnavailable extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: const BoxDecoration(
+              color: Color(0x29FFFFFF),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.play_disabled,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Video unavailable',
+            style: TextStyle(
+              fontSize: 12,
+              color: Color(0xB3FFFFFF),
+            ),
           ),
         ],
       ),
     );
   }
+}
 
-  String _subjectLabel(CourseSubject s) {
-    final n = s.name;
-    return n[0].toUpperCase() + n.substring(1);
+// ─── Chip tab row ─────────────────────────────────────────────────────────────
+
+class _ChipTabRow extends StatefulWidget {
+  final TabController tabController;
+
+  const _ChipTabRow({required this.tabController});
+
+  @override
+  State<_ChipTabRow> createState() => _ChipTabRowState();
+}
+
+class _ChipTabRowState extends State<_ChipTabRow> {
+  int _activeIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _activeIndex = widget.tabController.index;
+    widget.tabController.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    if (mounted && _activeIndex != widget.tabController.index) {
+      setState(() => _activeIndex = widget.tabController.index);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.tabController.removeListener(_onTabChanged);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const labels = ['Notes', 'Transcript', 'Up next'];
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: List.generate(labels.length, (i) {
+          final isActive = i == _activeIndex;
+          return Padding(
+            padding: EdgeInsets.only(right: i < labels.length - 1 ? 8 : 0),
+            child: _ChipTab(
+              label: labels[i],
+              isActive: isActive,
+              onTap: () => widget.tabController.animateTo(i),
+            ),
+          );
+        }),
+      ),
+    );
   }
 }
 
-class _VideoPlayer extends StatelessWidget {
-  final Course course;
-  final Lesson lesson;
-  final bool isPlaying;
-  final double progress;
-  final VoidCallback onTogglePlay;
-  final ValueChanged<double> onScrub;
+class _ChipTab extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
 
-  const _VideoPlayer({
-    required this.course,
-    required this.lesson,
-    required this.isPlaying,
-    required this.progress,
-    required this.onTogglePlay,
-    required this.onScrub,
+  const _ChipTab({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final totalSecs = lesson.durationMinutes * 60;
-    final elapsedSecs = (totalSecs * progress).round();
-    final mm = (elapsedSecs ~/ 60).toString().padLeft(2, '0');
-    final ss = (elapsedSecs % 60).toString().padLeft(2, '0');
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          color: const Color(0xFF1A1A2E),
-          height: 210,
-          child: Stack(
-            children: [
-              // Background "chalkboard" placeholder
-              Positioned.fill(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(course.grade.toUpperCase(),
-                          style: const TextStyle(
-                              color: Colors.amber,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text(course.subject.name.toUpperCase(),
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 36,
-                              letterSpacing: 2,
-                              fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              ),
-              // Center playback controls
-              Positioned.fill(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.replay_10,
-                          color: Colors.white70, size: 32),
-                      onPressed: () {},
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: onTogglePlay,
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white30, width: 2),
-                        ),
-                        child: Icon(
-                          isPlaying ? Icons.pause : Icons.play_arrow,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.forward_10,
-                          color: Colors.white70, size: 32),
-                      onPressed: () {},
-                    ),
-                  ],
-                ),
-              ),
-              // Bottom progress row
-              Positioned(
-                left: 12,
-                right: 12,
-                bottom: 4,
-                child: Row(
-                  children: [
-                    Text('$mm:$ss',
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 12)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: SliderTheme(
-                        data: SliderThemeData(
-                          trackHeight: 2,
-                          thumbShape: const RoundSliderThumbShape(
-                              enabledThumbRadius: 5),
-                          overlayShape: const RoundSliderOverlayShape(
-                              overlayRadius: 10),
-                          activeTrackColor: Colors.red,
-                          inactiveTrackColor: Colors.white24,
-                          thumbColor: Colors.red,
-                        ),
-                        child: Slider(
-                          value: progress,
-                          onChanged: onScrub,
-                        ),
-                      ),
-                    ),
-                    const Icon(Icons.fullscreen,
-                        color: Colors.white70, size: 22),
-                  ],
-                ),
-              ),
-            ],
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: isActive
+              ? null
+              : Border.all(color: AppColors.greyLight),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.figtree(
+            fontSize: 13,
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+            color: isActive ? Colors.white : AppColors.grey,
           ),
         ),
       ),
@@ -287,59 +483,70 @@ class _NoteTabState extends State<_NoteTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Your Thoughts',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textHeadline,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      child: SoftCard(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Your Thoughts',
+              style: GoogleFonts.figtree(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textBody,
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.greyLight),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _ctrl,
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      hintText: 'Add your thought',
-                      hintStyle: TextStyle(color: AppColors.grey),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.greyLight),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _ctrl,
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        hintText: 'Add your thought',
+                        hintStyle: GoogleFonts.figtree(
+                          color: AppColors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
+                      style: GoogleFonts.figtree(
+                        fontSize: 14,
+                        color: AppColors.textBody,
+                      ),
                     ),
                   ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    if (_ctrl.text.trim().isEmpty) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Note saved')),
-                    );
-                    _ctrl.clear();
-                  },
-                  child: const Text(
-                    'Save',
-                    style: TextStyle(
-                      color: AppColors.textHeadline,
-                      fontWeight: FontWeight.w700,
+                  TextButton(
+                    onPressed: () {
+                      if (_ctrl.text.trim().isEmpty) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Note saved')),
+                      );
+                      _ctrl.clear();
+                    },
+                    child: Text(
+                      'Save',
+                      style: GoogleFonts.figtree(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -353,43 +560,40 @@ class _TranscriptTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final text = lesson.contentHtml ??
+        'Welcome to our ${lesson.title.toLowerCase()} lesson! In '
+            'this video, we will explore the fascinating world of '
+            'classical mechanics. We will start by discussing '
+            "Newton's laws of motion, which form the foundation of "
+            'our understanding of how objects move. From the simple '
+            'act of throwing a ball to the complex orbits of '
+            'planets, these laws help us predict and explain the '
+            'behavior of physical systems.\n\nWe will also delve '
+            'into concepts like force, mass, and acceleration, '
+            'providing real-world examples to illustrate these '
+            'principles in action.\n\nAs we progress, we will '
+            'introduce the concept of energy and its various '
+            'forms, including kinetic and potential energy.';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Transcript',
-            style: TextStyle(
+            style: GoogleFonts.figtree(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: AppColors.textHeadline,
+              color: AppColors.textBody,
             ),
           ),
           const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.greyLight),
-            ),
+          SoftCard(
+            padding: const EdgeInsets.all(16),
             child: Text(
-              lesson.contentHtml ??
-                  'Welcome to our ${lesson.title.toLowerCase()} lesson! In '
-                      'this video, we will explore the fascinating world of '
-                      'classical mechanics. We will start by discussing '
-                      "Newton's laws of motion, which form the foundation of "
-                      'our understanding of how objects move. From the simple '
-                      'act of throwing a ball to the complex orbits of '
-                      'planets, these laws help us predict and explain the '
-                      'behavior of physical systems.\n\nWe will also delve '
-                      'into concepts like force, mass, and acceleration, '
-                      'providing real-world examples to illustrate these '
-                      'principles in action.\n\nAs we progress, we will '
-                      'introduce the concept of energy and its various '
-                      'forms, including kinetic and potential energy.',
-              style: const TextStyle(
+              text,
+              style: GoogleFonts.figtree(
                 color: AppColors.textBody,
                 fontSize: 14,
                 height: 1.55,
@@ -418,13 +622,22 @@ class _UpNextTab extends ConsumerWidget {
         : course.lessons;
 
     if (upcoming.isEmpty) {
-      return const Center(child: Text('No more lessons.'));
+      return Center(
+        child: Text(
+          'No more lessons.',
+          style: GoogleFonts.figtree(
+            color: AppColors.grey,
+            fontSize: 14,
+          ),
+        ),
+      );
     }
 
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       itemCount: upcoming.length,
-      separatorBuilder: (ctx, i) => const Divider(height: 1),
+      separatorBuilder: (ctx, i) =>
+          Divider(height: 1, color: AppColors.greyLight),
       itemBuilder: (context, i) {
         final lesson = upcoming[i];
         final isCurrent = lesson.id == currentLesson.id;
@@ -440,7 +653,7 @@ class _UpNextTab extends ConsumerWidget {
                   width: 24,
                   child: Text(
                     '${i + 1}',
-                    style: const TextStyle(
+                    style: GoogleFonts.figtree(
                       color: AppColors.grey,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
@@ -454,18 +667,18 @@ class _UpNextTab extends ConsumerWidget {
                     children: [
                       Text(
                         lesson.title,
-                        style: TextStyle(
+                        style: GoogleFonts.figtree(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: isCurrent
                               ? AppColors.primary
-                              : AppColors.textHeadline,
+                              : AppColors.textBody,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         _lessonSubtitle(lesson),
-                        style: const TextStyle(
+                        style: GoogleFonts.figtree(
                           fontSize: 12,
                           color: AppColors.grey,
                         ),
@@ -507,41 +720,31 @@ class _BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: AppColors.greyLight)),
-        ),
-        child: Row(
-          children: [
-            TextButton(
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.greyLight)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: PillButton.outlined(
+              label: 'Previous',
+              icon: Icons.chevron_left,
+              enabled: hasPrev,
               onPressed: onPrev,
-              child: Text(
-                'Previous',
-                style: TextStyle(
-                  color: hasPrev ? AppColors.textHeadline : AppColors.greyLight,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
-              ),
             ),
-            const Spacer(),
-            TextButton(
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: PillButton(
+              label: 'Next',
+              enabled: hasNext,
               onPressed: onNext,
-              child: Text(
-                'Next',
-                style: TextStyle(
-                  color: hasNext ? AppColors.textHeadline : AppColors.greyLight,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
-              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

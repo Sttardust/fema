@@ -2,13 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/pill_button.dart';
 
 /// Entry screen for unauthenticated users. Auto-advancing 3-page carousel
-/// with persistent Sign Up / Login at bottom and a "Browse the app" link
-/// in the top-right that drops the user into guest-mode /home.
+/// with "Get started" (signup), "Browse as guest" (home), and a sign-in
+/// footer at the bottom.
 class FemaIntroScreen extends StatefulWidget {
   const FemaIntroScreen({super.key});
 
@@ -28,19 +29,16 @@ class _FemaIntroScreenState extends State<FemaIntroScreen> {
       title: 'Welcome to FEMA!',
       description:
           'A smart way to learn, grow, and shine.\nBuilt for Ethiopian students, parents, and educators.',
-      imagePath: 'assets/images/intro/welcome_family.png',
     ),
     _IntroPage(
       title: 'Expert Teachers',
       description:
           "Learn from Ethiopia's best educators and stay ahead in your learning journey.",
-      imagePath: 'assets/images/intro/expert_teachers.png',
     ),
     _IntroPage(
       title: 'Academic Success',
       description:
           'Track your progress and achieve excellence with our adaptive learning tools.',
-      imagePath: 'assets/images/intro/academic_success.png',
     ),
   ];
 
@@ -70,27 +68,11 @@ class _FemaIntroScreenState extends State<FemaIntroScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: TextButton(
-                  onPressed: () => context.go('/home'),
-                  child: const Text(
-                    'Browse the app',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            // Carousel
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -99,10 +81,12 @@ class _FemaIntroScreenState extends State<FemaIntroScreen> {
                 itemBuilder: (context, index) => _pages[index],
               ),
             ),
+            // Bottom controls
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24),
               child: Column(
                 children: [
+                  // Page dots
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(_pages.length, (i) {
@@ -110,43 +94,52 @@ class _FemaIntroScreenState extends State<FemaIntroScreen> {
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
                         margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: active ? 22 : 8,
-                        height: 8,
+                        width: active ? 20 : 6,
+                        height: 6,
                         decoration: BoxDecoration(
-                          color: active
-                              ? AppColors.primary
-                              : AppColors.primaryLight.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(4),
+                          color: active ? AppColors.primary : AppColors.greyLight,
+                          borderRadius: BorderRadius.circular(3),
                         ),
                       );
                     }),
                   ),
                   const SizedBox(height: 24),
-                  AppButton(
-                    text: 'Sign Up',
+                  // Primary action — Get started → signup
+                  PillButton(
+                    label: 'Get started',
                     onPressed: () => context.go('/signup'),
                   ),
                   const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () => context.go('/login'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: AppColors.greyLight),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                  // Secondary action — Browse as guest → home
+                  PillButton.outlined(
+                    label: 'Browse as guest',
+                    onPressed: () => context.go('/home'),
+                  ),
+                  const SizedBox(height: 20),
+                  // Footer — sign-in link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Already have an account?',
+                        style: GoogleFonts.figtree(
+                          fontSize: 13,
+                          color: AppColors.grey,
                         ),
                       ),
-                      child: const Text(
-                        'Login',
-                        style: TextStyle(
-                          color: AppColors.textHeadline,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
+                      const SizedBox(width: 5),
+                      GestureDetector(
+                        onTap: () => context.go('/login'),
+                        child: Text(
+                          'Sign in',
+                          style: GoogleFonts.figtree(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -162,12 +155,10 @@ class _FemaIntroScreenState extends State<FemaIntroScreen> {
 class _IntroPage extends StatelessWidget {
   final String title;
   final String description;
-  final String imagePath;
 
   const _IntroPage({
     required this.title,
     required this.description,
-    required this.imagePath,
   });
 
   @override
@@ -175,33 +166,52 @@ class _IntroPage extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Expanded(
-            child: Center(
-              child: Image.asset(imagePath, fit: BoxFit.contain),
+          // Icon composition: 200px primarySoft circle → 120px primary circle → white icon
+          Container(
+            width: 200,
+            height: 200,
+            decoration: const BoxDecoration(
+              color: AppColors.primarySoft,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.school,
+                size: 56,
+                color: Colors.white,
+              ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 36),
           Text(
             title,
-            style: const TextStyle(
+            style: GoogleFonts.figtree(
               fontSize: 26,
               fontWeight: FontWeight.w800,
-              color: AppColors.textHeadline,
+              color: AppColors.textBody,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
           Text(
             description,
-            style: const TextStyle(
-              fontSize: 15,
-              height: 1.4,
+            style: GoogleFonts.figtree(
+              fontSize: 14,
+              height: 1.55,
               color: AppColors.grey,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
         ],
       ),
     );

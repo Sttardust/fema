@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../library/domain/library_provider.dart';
-import '../../library/domain/models.dart';
+import '../../../core/widgets/capsule_tab_bar.dart';
+import '../../../core/widgets/soft_card.dart';
+import '../../../core/widgets/pill_button.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../profile/domain/user_profile_repository.dart';
+import '../../library/domain/library_provider.dart';
+import '../../library/domain/models.dart';
+import '../domain/class_repository.dart';
 import 'class_management_screen.dart';
 
 // ─── Tab State Provider ───
@@ -20,6 +24,7 @@ class TeacherHomeScreen extends ConsumerWidget {
     final currentIndex = ref.watch(teacherTabProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: IndexedStack(
         index: currentIndex,
         children: const [
@@ -28,74 +33,32 @@ class TeacherHomeScreen extends ConsumerWidget {
           ProfileScreen(),
         ],
       ),
-      bottomNavigationBar: _TeacherNavBar(currentIndex: currentIndex, ref: ref),
-    );
-  }
-}
-
-class _TeacherNavBar extends StatelessWidget {
-  final int currentIndex;
-  final WidgetRef ref;
-  const _TeacherNavBar({required this.currentIndex, required this.ref});
-
-  @override
-  Widget build(BuildContext context) {
-    final tabs = [
-      (icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home'),
-      (icon: Icons.class_outlined, activeIcon: Icons.class_, label: 'My Classes'),
-      (icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile'),
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -2)),
+      bottomNavigationBar: CapsuleTabBar(
+        currentIndex: currentIndex,
+        onTap: (i) => ref.read(teacherTabProvider.notifier).state = i,
+        items: const [
+          CapsuleTabItem(
+            icon: Icons.home_outlined,
+            activeIcon: Icons.home,
+            label: 'Home',
+          ),
+          CapsuleTabItem(
+            icon: Icons.school_outlined,
+            activeIcon: Icons.school,
+            label: 'Classes',
+          ),
+          CapsuleTabItem(
+            icon: Icons.person_outline,
+            activeIcon: Icons.person,
+            label: 'Profile',
+          ),
         ],
       ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(tabs.length, (i) {
-              final tab = tabs[i];
-              final isActive = currentIndex == i;
-              return InkWell(
-                onTap: () => ref.read(teacherTabProvider.notifier).state = i,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isActive ? tab.activeIcon : tab.icon,
-                        color: isActive ? AppColors.primary : AppColors.grey,
-                        size: 24,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        tab.label,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                          color: isActive ? AppColors.primary : AppColors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ),
-      ),
     );
   }
 }
 
-// ─── Teacher Dashboard Tab ───
+// ─── Teacher Dashboard ───
 class _TeacherDashboard extends ConsumerWidget {
   const _TeacherDashboard();
 
@@ -103,25 +66,56 @@ class _TeacherDashboard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(currentUserProfileProvider).asData?.value;
     final firstName = profile?.firstName ?? 'Teacher';
+    final classesAsync = ref.watch(teacherClassesProvider);
     final coursesAsync = ref.watch(teacherCoursesProvider);
 
     return SafeArea(
       child: CustomScrollView(
         slivers: [
-          // ── Top Bar ──
+          // ── Header Row ──
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               child: Row(
                 children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      firstName.isNotEmpty ? firstName[0].toUpperCase() : 'T',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Hello, $firstName 👋', style: AppTextStyles.headlineSmall.copyWith(fontWeight: FontWeight.bold)),
-                      Text("Let's inspire today!", style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey)),
+                      Text(
+                        'Hi, $firstName \u{1F44B}',
+                        style: GoogleFonts.figtree(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textBody,
+                        ),
+                      ),
+                      Text(
+                        "Here's your teaching overview",
+                        style: GoogleFonts.figtree(
+                          fontSize: 13,
+                          color: AppColors.grey,
+                        ),
+                      ),
                     ],
                   ),
-                  const Spacer(),
                 ],
               ),
             ),
@@ -129,159 +123,386 @@ class _TeacherDashboard extends ConsumerWidget {
 
           // ── Stats Row ──
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Row(
-                children: [
-                  Expanded(child: _StatCard(title: 'Active Courses', value: '4', icon: Icons.menu_book_outlined, color: AppColors.primary)),
-                  const SizedBox(width: 12),
-                  Expanded(child: _StatCard(title: 'Total Students', value: '124', icon: Icons.people_outline, color: Colors.green)),
-                  const SizedBox(width: 12),
-                  Expanded(child: _StatCard(title: 'Avg Rating', value: '4.8', icon: Icons.star_outline, color: Colors.amber)),
-                ],
-              ),
-            ),
-          ),
+            child: classesAsync.when(
+              data: (classes) {
+                final classCount = classes.length;
+                final studentCount = classes.fold<int>(
+                  0,
+                  (sum, c) => sum + c.studentCount,
+                );
 
-          // ── My Courses Section ──
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('My Courses', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
-                  TextButton(
-                    onPressed: () => ref.read(teacherTabProvider.notifier).state = 1,
-                    child: Text('Manage', style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary)),
-                  ),
-                ],
-              ),
-            ),
-          ),
+                // Derive lessons count from teacherCoursesProvider
+                final lessonsValue = coursesAsync.when(
+                  data: (courses) {
+                    final total = courses.fold<int>(
+                      0,
+                      (sum, c) => sum + c.lessons.length,
+                    );
+                    return '$total';
+                  },
+                  loading: () => '…',
+                  error: (e, _) => '--',
+                );
 
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 190,
-              child: coursesAsync.when(
-                data: (courses) => courses.isEmpty
-                    ? const Center(child: Text('No courses yet. Create your first!'))
-                    : ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: courses.length,
-                        itemBuilder: (context, index) => _TeacherCourseCard(
-                          course: courses[index],
-                          students: 30 + index * 5,
-                          onTap: () {
-                            ref.read(selectedCourseProvider.notifier).state = courses[index];
-                            context.push('/library/course-details');
-                          },
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _StatTile(
+                          icon: Icons.school,
+                          value: '$classCount',
+                          label: 'Classes',
                         ),
                       ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => const Center(child: Text('Could not load courses')),
-              ),
-            ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Stat Card ───
-class _StatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
-  const _StatCard({required this.title, required this.value, required this.icon, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.15)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 8),
-          Text(value, style: AppTextStyles.headlineSmall.copyWith(color: color, fontWeight: FontWeight.bold, fontSize: 20)),
-          Text(title, style: AppTextStyles.caption.copyWith(color: AppColors.grey, fontSize: 10)),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Teacher Course Card ───
-class _TeacherCourseCard extends StatelessWidget {
-  final Course course;
-  final int students;
-  final VoidCallback onTap;
-  const _TeacherCourseCard({required this.course, required this.students, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 200,
-        margin: const EdgeInsets.only(right: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.greyLight),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Container(
-                height: 105,
-                color: AppColors.primaryDark,
-                child: Image.network(
-                  course.thumbnailUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  errorBuilder: (context, error, stackTrace) => Center(
-                    child: Text(
-                      course.subject.name.toUpperCase(),
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatTile(
+                          icon: Icons.people,
+                          value: '$studentCount',
+                          label: 'Students',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatTile(
+                          icon: Icons.menu_book_outlined,
+                          value: lessonsValue,
+                          label: 'Lessons',
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              loading: () => const Padding(
+                padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: SizedBox(
+                  height: 90,
+                  child: Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
                   ),
                 ),
               ),
+              error: (e, _) => const SizedBox.shrink(),
             ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(course.title, style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.people_outline, size: 13, color: AppColors.grey),
-                      const SizedBox(width: 4),
-                      Text('$students students', style: AppTextStyles.caption.copyWith(color: AppColors.grey)),
-                    ],
-                  ),
-                ],
+          ),
+
+          // ── "Your classes" section header ──
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
+              child: Text(
+                'Your classes',
+                style: GoogleFonts.figtree(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textBody,
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+
+          // ── Classes List ──
+          SliverToBoxAdapter(
+            child: classesAsync.when(
+              data: (classes) {
+                if (classes.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.school,
+                          size: 40,
+                          color: AppColors.greyLight,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'No classes yet',
+                          style: GoogleFonts.figtree(
+                            fontSize: 14,
+                            color: AppColors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 40),
+                          child: PillButton(
+                            label: 'Create a class',
+                            onPressed: () {
+                              ref.read(teacherTabProvider.notifier).state = 1;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  child: Column(
+                    children: List.generate(classes.length, (i) {
+                      final cls = classes[i];
+                      final tint = AppColors.subjectTints[i % AppColors.subjectTints.length];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: SoftCard(
+                          radius: 18,
+                          padding: EdgeInsets.zero,
+                          onTap: () {
+                            ref.read(teacherTabProvider.notifier).state = 1;
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: tint,
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.school,
+                                    color: Colors.white,
+                                    size: 22,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        cls.name,
+                                        style: GoogleFonts.figtree(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textBody,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '${cls.studentCount} students',
+                                        style: GoogleFonts.figtree(
+                                          fontSize: 12,
+                                          color: AppColors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_right,
+                                  size: 18,
+                                  color: AppColors.grey,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                );
+              },
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              ),
+              error: (error, _) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Text(
+                  'Could not load classes',
+                  style: GoogleFonts.figtree(fontSize: 14, color: AppColors.grey),
+                ),
+              ),
+            ),
+          ),
+
+          // ── "My courses" section (only shown when there are courses) ──
+          SliverToBoxAdapter(
+            child: coursesAsync.when(
+              data: (courses) {
+                if (courses.isEmpty) return const SizedBox.shrink();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Section header
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      child: Text(
+                        'My courses',
+                        style: GoogleFonts.figtree(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textBody,
+                        ),
+                      ),
+                    ),
+                    // Horizontal scroll of course cards
+                    SizedBox(
+                      height: 172,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                        itemCount: courses.length,
+                        separatorBuilder: (context, _) => const SizedBox(width: 12),
+                        itemBuilder: (context, i) {
+                          final course = courses[i];
+                          final tint = AppColors.subjectTints[
+                              i % AppColors.subjectTints.length];
+                          return SoftCard(
+                            radius: 18,
+                            padding: const EdgeInsets.all(12),
+                            onTap: () {
+                              ref
+                                  .read(selectedCourseProvider.notifier)
+                                  .state = course;
+                              context.push('/library/course-details');
+                            },
+                            child: SizedBox(
+                              width: 200,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Subject tile
+                                  Container(
+                                    height: 48,
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      color: tint,
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Icon(
+                                      _subjectIcon(course.subject),
+                                      color: Colors.white,
+                                      size: 22,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  // Course title
+                                  Text(
+                                    course.title,
+                                    style: GoogleFonts.figtree(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textBody,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const Spacer(),
+                                  // Lessons count
+                                  Text(
+                                    '${course.lessons.length} lessons',
+                                    style: GoogleFonts.figtree(
+                                      fontSize: 12,
+                                      color: AppColors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                );
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (e, _) => const SizedBox.shrink(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Subject icon helper (mirrors home_screen.dart) ───
+IconData _subjectIcon(CourseSubject subject) {
+  switch (subject) {
+    case CourseSubject.math:
+      return Icons.calculate;
+    case CourseSubject.science:
+      return Icons.science;
+    case CourseSubject.english:
+      return Icons.menu_book;
+    case CourseSubject.amharic:
+      return Icons.translate;
+    case CourseSubject.socialStudies:
+      return Icons.public;
+    case CourseSubject.other:
+      return Icons.school;
+  }
+}
+
+// ─── Stat Tile ───
+class _StatTile extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+
+  const _StatTile({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SoftCard(
+      radius: 18,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: AppColors.primarySoft,
+              borderRadius: BorderRadius.circular(11),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              icon,
+              color: AppColors.primary,
+              size: 17,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: GoogleFonts.figtree(
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textBody,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: GoogleFonts.figtree(
+              fontSize: 11.5,
+              color: AppColors.grey,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../auth/domain/auth_repository.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_logo.dart';
+import '../../../core/widgets/pill_button.dart';
+import '../../../core/widgets/soft_card.dart';
+import '../../onboarding/domain/onboarding_provider.dart';
 import '../domain/user_profile.dart';
 import '../domain/user_profile_repository.dart';
 
@@ -15,7 +18,7 @@ class ProfileScreen extends ConsumerWidget {
     final profileAsync = ref.watch(currentUserProfileProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       body: profileAsync.when(
         data: (profile) {
           if (profile == null) {
@@ -23,57 +26,99 @@ class ProfileScreen extends ConsumerWidget {
           }
           return _ProfileBody(profile: profile);
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () =>
+            const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (e, _) => Center(child: Text('Error loading profile: $e')),
       ),
     );
   }
 }
 
+// ─── Guest View ─────────────────────────────────────────────────────────────
+
 class _ProfileGuestView extends StatelessWidget {
   const _ProfileGuestView();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const _PurpleHeader(title: 'Profile'),
-        const SizedBox(height: 80),
-        const Icon(Icons.person_outline, size: 64, color: AppColors.grey),
-        const SizedBox(height: 16),
-        const Text(
-          "You're browsing as a guest.",
-          style: TextStyle(fontSize: 16, color: AppColors.textHeadline),
-        ),
-        const SizedBox(height: 8),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 32),
-          child: Text(
-            'Create an account to track your progress and save lessons.',
-            style: TextStyle(fontSize: 14, color: AppColors.grey, height: 1.4),
-            textAlign: TextAlign.center,
-          ),
-        ),
-        const SizedBox(height: 24),
-        SizedBox(
-          width: 220,
-          child: ElevatedButton(
-            onPressed: () => context.go('/signup'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              elevation: 0,
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title
+            Text(
+              'Profile',
+              style: GoogleFonts.figtree(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textBody,
+              ),
             ),
-            child: const Text('Sign Up',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
+            const SizedBox(height: 24),
+
+            // Identity card — guest
+            SoftCard(
+              radius: 20,
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.person, size: 34, color: Colors.white),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Guest',
+                    style: GoogleFonts.figtree(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textBody,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySoft,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(
+                      'Guest',
+                      style: GoogleFonts.figtree(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Sign in button
+            PillButton(
+              label: 'Sign in',
+              onPressed: () => context.go('/signup'),
+              icon: Icons.login,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
+
+// ─── Authenticated Body ──────────────────────────────────────────────────────
 
 class _ProfileBody extends ConsumerWidget {
   final AppUserProfile profile;
@@ -81,63 +126,203 @@ class _ProfileBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const _PurpleHeader(title: 'Profile Settings'),
-          const SizedBox(height: 32),
-          Center(child: _Avatar(profile: profile)),
-          const SizedBox(height: 36),
-          _SectionHeader(
-            title: 'Personal Information',
-            trailing: const Icon(Icons.edit_outlined, size: 18, color: AppColors.textHeadline),
-            onTrailingTap: () {},
-          ),
-          _ReadOnlyRow(label: 'Full Name', value: profile.fullName),
-          const SizedBox(height: 8),
-          _ReadOnlyRow(label: 'Email', value: profile.email ?? '—'),
-          const SizedBox(height: 8),
-          _ReadOnlyRow(label: 'Phone Number', value: profile.phone ?? '—'),
-          const SizedBox(height: 28),
-          _SectionHeader(title: 'Security'),
-          _NavRow(label: 'Change Password', onTap: () => _showChangePasswordSheet(context, ref)),
-          const SizedBox(height: 8),
-          _NavRow(label: 'Account Management', onTap: () => context.push('/profile/account-management')),
-          const SizedBox(height: 8),
-          _NavRow(label: 'Subscription', onTap: () => _comingSoon(context, 'Subscription')),
-          const SizedBox(height: 28),
-          _SectionHeader(title: 'Notifications'),
-          _ToggleRow(
-            label: 'Notifications',
-            value: true,
-            onChanged: (v) {},
-          ),
-          const SizedBox(height: 28),
-          _SectionHeader(title: 'Help and Support'),
-          _NavRow(label: 'About Us', onTap: () => context.push('/profile/about')),
-          const SizedBox(height: 8),
-          _NavRow(label: 'Help', onTap: () => _comingSoon(context, 'Help')),
-          const SizedBox(height: 8),
-          _NavRow(label: 'Share the FEMA App', onTap: () => _comingSoon(context, 'Share')),
-          const SizedBox(height: 32),
-          Center(
-            child: TextButton(
-              onPressed: () => _signOut(context, ref),
-              child: const Text(
-                'Sign out',
-                style: TextStyle(
-                  color: AppColors.error,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
+    final displayName = profile.fullName;
+    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
+    final email = profile.email;
+    final phone = profile.phone;
+    final subtitle = email?.isNotEmpty == true
+        ? email!
+        : (phone?.isNotEmpty == true ? phone! : '');
+    final roleBadge = _roleBadgeLabel(profile);
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Title ──
+            Text(
+              'Profile',
+              style: GoogleFonts.figtree(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textBody,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // ── Identity SoftCard ──
+            SoftCard(
+              radius: 20,
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      initial,
+                      style: GoogleFonts.figtree(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    displayName,
+                    style: GoogleFonts.figtree(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textBody,
+                    ),
+                  ),
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.figtree(
+                        fontSize: 13,
+                        color: AppColors.grey,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySoft,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(
+                      roleBadge,
+                      style: GoogleFonts.figtree(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // ── ACCOUNT group ──
+            _GroupLabel('ACCOUNT'),
+            const SizedBox(height: 10),
+            SoftCard(
+              radius: 18,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                children: [
+                  _NavRow(
+                    icon: Icons.lock_outline,
+                    label: 'Change password',
+                    onTap: () => _showChangePasswordSheet(context, ref),
+                  ),
+                  _Divider(),
+                  _NavRow(
+                    icon: Icons.manage_accounts_outlined,
+                    label: 'Account management',
+                    onTap: () => context.push('/profile/account-management'),
+                  ),
+                  _Divider(),
+                  _NavRow(
+                    icon: Icons.card_membership_outlined,
+                    label: 'Subscription',
+                    onTap: () => _comingSoon(context, 'Subscription'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // ── APP group ──
+            _GroupLabel('APP'),
+            const SizedBox(height: 10),
+            SoftCard(
+              radius: 18,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                children: [
+                  _NavRow(
+                    icon: Icons.info_outline,
+                    label: 'About Us',
+                    onTap: () => context.push('/profile/about'),
+                  ),
+                  _Divider(),
+                  _NavRow(
+                    icon: Icons.help_outline,
+                    label: 'Help',
+                    onTap: () => _comingSoon(context, 'Help'),
+                  ),
+                  _Divider(),
+                  _NavRow(
+                    icon: Icons.share_outlined,
+                    label: 'Share the FEMA App',
+                    onTap: () => _comingSoon(context, 'Share'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // ── Sign out ──
+            GestureDetector(
+              onTap: () => _signOut(context, ref),
+              child: Container(
+                height: 52,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(26),
+                  border: Border.all(color: const Color(0xFFF1D7D7)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.logout, size: 16, color: AppColors.error),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Sign out',
+                      style: GoogleFonts.figtree(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  String _roleBadgeLabel(AppUserProfile p) {
+    switch (p.role) {
+      case UserRole.student:
+        final grade = p.grade;
+        return grade != null && grade.isNotEmpty ? 'Student · Grade $grade' : 'Student';
+      case UserRole.teacher:
+        return 'Teacher';
+      case UserRole.admin:
+        return 'Admin';
+      case UserRole.parent:
+        return 'Parent';
+      case UserRole.none:
+        return 'User';
+    }
   }
 
   Future<void> _signOut(BuildContext context, WidgetRef ref) async {
@@ -175,231 +360,83 @@ class _ProfileBody extends ConsumerWidget {
   }
 }
 
-class _PurpleHeader extends StatelessWidget {
-  final String title;
-  const _PurpleHeader({required this.title});
+// ─── Shared Widgets ──────────────────────────────────────────────────────────
+
+class _GroupLabel extends StatelessWidget {
+  final String text;
+  const _GroupLabel(this.text);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-          child: Row(
-            children: [
-              const AppLogoLockup(color: Colors.white),
-              const Spacer(),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Spacer(),
-              const Icon(Icons.search, color: Colors.white, size: 24),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  final AppUserProfile profile;
-  const _Avatar({required this.profile});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 116,
-      height: 116,
-      child: Stack(
-        children: [
-          Container(
-            width: 116,
-            height: 116,
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.greyLight),
-            ),
-            child: const Icon(Icons.person, size: 64, color: AppColors.accent),
-          ),
-          Positioned(
-            right: 4,
-            bottom: 4,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.greyLight),
-              ),
-              child: const Icon(Icons.edit_outlined,
-                  size: 18, color: AppColors.textHeadline),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final Widget? trailing;
-  final VoidCallback? onTrailingTap;
-  const _SectionHeader({required this.title, this.trailing, this.onTrailingTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-      child: Row(
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textHeadline,
-            ),
-          ),
-          const Spacer(),
-          if (trailing != null)
-            GestureDetector(onTap: onTrailingTap, child: trailing!),
-        ],
-      ),
-    );
-  }
-}
-
-class _ReadOnlyRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _ReadOnlyRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(color: AppColors.grey, fontSize: 14),
-              ),
-            ),
-            Text(
-              value,
-              style: const TextStyle(
-                color: AppColors.textHeadline,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
+    return Text(
+      text,
+      style: GoogleFonts.figtree(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: AppColors.grey,
+        letterSpacing: 0.5,
       ),
     );
   }
 }
 
 class _NavRow extends StatelessWidget {
+  final IconData icon;
   final String label;
   final VoidCallback onTap;
-  const _NavRow({required this.label, required this.onTap});
+
+  const _NavRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    color: AppColors.textHeadline,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: AppColors.primarySoft,
+                borderRadius: BorderRadius.circular(11),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, size: 16, color: AppColors.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.figtree(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textBody,
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AppColors.grey, size: 22),
-            ],
-          ),
+            ),
+            const Icon(Icons.chevron_right, size: 16, color: AppColors.grey),
+          ],
         ),
       ),
     );
   }
 }
 
-class _ToggleRow extends StatelessWidget {
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-  const _ToggleRow({required this.label, required this.value, required this.onChanged});
-
+class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.textHeadline,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-              activeThumbColor: Colors.white,
-              activeTrackColor: AppColors.primary,
-            ),
-          ],
-        ),
-      ),
+    return const Divider(
+      height: 1,
+      thickness: 1,
+      indent: 62,
+      endIndent: 16,
+      color: AppColors.greyLight,
     );
   }
 }

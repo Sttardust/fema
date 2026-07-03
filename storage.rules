@@ -1,0 +1,13 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Lesson videos are seeded by admins from the console; clients only read.
+    match /lesson-videos/{video=**} {
+      allow read: if true;   // published-course videos are world-readable (guest mode)
+      allow write: if false; // uploads happen via the Firebase console only
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

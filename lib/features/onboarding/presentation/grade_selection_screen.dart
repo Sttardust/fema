@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/pill_button.dart';
 import '../domain/onboarding_provider.dart';
-import 'widgets/onboarding_progress_header.dart';
 
 class GradeSelectionScreen extends ConsumerStatefulWidget {
   const GradeSelectionScreen({super.key});
@@ -48,28 +47,55 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
   void _showParentalModal() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Parental Assistance', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text(
-          'For foundation years, we recommend completing the setup with a parent or guardian to ensure the best experience.'
+        title: Text(
+          'Parental Assistance',
+          style: GoogleFonts.figtree(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textBody,
+          ),
+        ),
+        content: Text(
+          'For foundation years, we recommend completing the setup with a parent or guardian to ensure the best experience.',
+          style: GoogleFonts.figtree(
+            fontSize: 13.5,
+            color: AppColors.grey,
+            height: 1.5,
+          ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Change Grade'),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Change Grade',
+              style: GoogleFonts.figtree(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
-          ElevatedButton(
+          TextButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(ctx);
               _finishWithGrade();
             },
-            style: ElevatedButton.styleFrom(
+            style: TextButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             ),
-            child: const Text('I Understand'),
+            child: Text(
+              'I Understand',
+              style: GoogleFonts.figtree(
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
           ),
         ],
       ),
@@ -79,109 +105,161 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: OnboardingProgressHeader(
-        currentStep: 1,
-        totalSteps: 1,
-        showSkip: false,
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
-              Text(
-                "What grade are you in?",
-                style: AppTextStyles.headlineMedium.copyWith(fontWeight: FontWeight.bold),
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Back button row
+            Padding(
+              padding: const EdgeInsets.only(
+                left: AppConstants.space24,
+                top: 16,
+                right: AppConstants.space24,
               ),
-              const SizedBox(height: 8),
-              Text(
-                "Select your current grade to get personalized learning content.",
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: () => context.pop(),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      shape: BoxShape.circle,
+                      boxShadow: const [
+                        BoxShadow(
+                          color: AppColors.cardShadow,
+                          blurRadius: 18,
+                          offset: Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.chevron_left,
+                      color: AppColors.textBody,
+                      size: 24,
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(height: 32),
-              
-              _buildSectionTitle('Primary Education'),
-              const SizedBox(height: 12),
-              _buildGradeGrid(_primaryGrades),
-              
-              const SizedBox(height: 32),
-              _buildSectionTitle('Secondary Education'),
-              const SizedBox(height: 12),
-              _buildGradeGrid(_secondaryGrades),
-              
-              const SizedBox(height: 40),
-              AppButton(
-                text: 'Continue',
-                onPressed: (_selectedGrade != null && !_isSubmitting) ? _onContinue : null,
+            ),
+            // Scrollable content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 28),
+                    Text(
+                      'What grade are you in?',
+                      style: GoogleFonts.figtree(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textBody,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "We'll personalize your library with courses for your grade.",
+                      style: GoogleFonts.figtree(
+                        fontSize: 14,
+                        color: AppColors.grey,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Primary Education section
+                    _buildSectionLabel('PRIMARY EDUCATION'),
+                    const SizedBox(height: 12),
+                    _buildGradeGrid(_primaryGrades),
+
+                    const SizedBox(height: 28),
+
+                    // Secondary Education section
+                    _buildSectionLabel('SECONDARY EDUCATION'),
+                    const SizedBox(height: 12),
+                    _buildGradeGrid(_secondaryGrades),
+
+                    const SizedBox(height: 36),
+                    PillButton(
+                      label: 'Continue',
+                      onPressed: (_selectedGrade != null && !_isSubmitting) ? _onContinue : null,
+                      enabled: _selectedGrade != null && !_isSubmitting,
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
               ),
-              const SizedBox(height: 40),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionLabel(String label) {
     return Text(
-      title.toUpperCase(),
-      style: AppTextStyles.caption.copyWith(
+      label,
+      style: GoogleFonts.figtree(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
         color: AppColors.grey,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 1.2,
+        letterSpacing: 0.5,
       ),
     );
   }
 
   Widget _buildGradeGrid(List<String> grades) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 2.2,
-      ),
-      itemCount: grades.length,
-      itemBuilder: (context, index) {
-        final grade = grades[index];
-        final isSelected = _selectedGrade == grade;
-        return InkWell(
-          onTap: () => setState(() => _selectedGrade = grade),
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary : AppColors.background,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isSelected ? AppColors.primary : AppColors.greyLight,
-                width: 1.5,
-              ),
-              boxShadow: isSelected ? [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                )
-              ] : null,
-            ),
-            child: Center(
-              child: Text(
-                grade,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: isSelected ? Colors.white : AppColors.textHeadline,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  fontSize: 13,
+    // Build rows of 3
+    final rows = <Widget>[];
+    for (var i = 0; i < grades.length; i += 3) {
+      final rowGrades = grades.sublist(i, (i + 3).clamp(0, grades.length));
+      rows.add(
+        Row(
+          children: rowGrades.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final grade = entry.value;
+            final isSelected = _selectedGrade == grade;
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(left: idx > 0 ? 10 : 0),
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedGrade = grade),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.primary : AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected ? AppColors.primary : AppColors.greyLight,
+                        width: 1,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        grade,
+                        style: GoogleFonts.figtree(
+                          fontSize: 14,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected ? Colors.white : AppColors.textBody,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-        );
-      },
-    );
+            );
+          }).toList(),
+        ),
+      );
+      if (i + 3 < grades.length) {
+        rows.add(const SizedBox(height: 10));
+      }
+    }
+    return Column(children: rows);
   }
 }

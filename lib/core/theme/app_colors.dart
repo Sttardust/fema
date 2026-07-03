@@ -1,31 +1,46 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Primary — brand violet from the FEMA Figma palette.
-  static const Color primary = Color(0xFF6F28F4);
-  static const Color primaryLight = Color(0xFFB28BF9);
-  static const Color primaryDark = Color(0xFF4E1BB0);
+  // Brand — indigo, from the Pencil MVP design system.
+  static const Color primary = Color(0xFF4B0082);
+  static const Color primaryLight = Color(0xFF7A42B5);
+  static const Color primaryDark = Color(0xFF38005F);
+  static const Color primarySoft = Color(0xFFEFE7F8);
 
-  // Selection state used on the role cards, onboarding pills, etc.
-  static const Color selectionFill = Color(0xFFD7F5E1); // mint
+  // Selection state used on role cards, grade tiles, chips.
+  static const Color selectionFill = primarySoft;
   static const Color selectionBorder = primary;
 
-  // Secondary/Accent colors
-  static const Color secondary = Color(0xFFFF7A59); // Salmon used in quiz
-  static const Color accent = Color(0xFFFF9F1C); // Orange used for buttons/icons
-  static const Color childrenModeBg = Color(0xFFE0F7F9); // Soft teal for children's mode
+  // Legacy accents kept for hidden (non-MVP) screens; muted to palette tints.
+  static const Color secondary = Color(0xFF8F5BC4);
+  static const Color accent = Color(0xFFB187DD);
+  static const Color childrenModeBg = primarySoft;
 
-  // Neutral colors
-  static const Color splashBg = Color(0xFFEEEEEE); // Splash + simple-canvas screens
-  static const Color background = Color(0xFFF8F9FB);
+  // Neutrals
+  static const Color splashBg = Color(0xFFF5F2FA);
+  static const Color background = Color(0xFFF5F2FA);
   static const Color surface = Colors.white;
-  static const Color textBody = Color(0xFF2D3142);
-  static const Color textHeadline = Color(0xFF0D1321);
-  static const Color grey = Color(0xFF9E9E9E);
-  static const Color greyLight = Color(0xFFE0E0E0);
+  static const Color textBody = Color(0xFF211936);
+  static const Color textHeadline = Color(0xFF211936);
+  static const Color grey = Color(0xFF8B84A0);
+  static const Color greyLight = Color(0xFFE7E2F1);
 
-  // Semantic colors
-  static const Color success = Color(0xFF4CAF50);
-  static const Color error = Color(0xFFF44336);
-  static const Color warning = Color(0xFFFFC107);
+  // Subject thumbnail tints (flat fills, no gradients)
+  static const List<Color> subjectTints = [
+    Color(0xFF4B0082),
+    Color(0xFF6D35A6),
+    Color(0xFF8F5BC4),
+    Color(0xFFB187DD),
+  ];
+
+  // Semantic
+  static const Color success = Color(0xFF2BB37A);
+  static const Color error = Color(0xFFC0392B);
+  static const Color errorSoft = Color(0xFFFDF2F2);
+  static const Color warning = Color(0xFFE5A63C);
+
+  // Card shadow: #1C1633 at 5%
+  static const Color cardShadow = Color(0x0D1C1633);
+  // Primary button shadow: #4B0082 at 25%
+  static const Color primaryShadow = Color(0x404B0082);
 }

@@ -19,6 +19,10 @@ Required platform setup:
 
 Without valid Firebase platform configuration, the app can still render, but authentication and Firestore-backed flows will not work correctly.
 
+## Content seeding
+
+Upload lesson MP4 files to Firebase Storage under the `lesson-videos/` prefix (e.g. `lesson-videos/course-id/lesson-id.mp4`). Once uploaded, copy the download URL from the Storage console and paste it into the corresponding lesson document's `videoUrl` field in Firestore. Lessons that have no `videoUrl` set (or where the field is absent) will render a "video unavailable" placeholder in the app rather than a player.
+
 ## Current Routing Rules
 
 - Unauthenticated users are redirected to `'/welcome'` for protected routes
