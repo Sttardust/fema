@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/pill_text_field.dart';
 import '../domain/auth_repository.dart';
+import '../domain/auth_error_messages.dart';
 
 class EmailLoginScreen extends ConsumerStatefulWidget {
   const EmailLoginScreen({super.key});
@@ -35,7 +36,7 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Login failed: ${e.toString()}')),
+            SnackBar(content: Text(authErrorMessage(e))),
           );
         }
       }
@@ -144,7 +145,7 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                       } catch (error) {
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Reset failed: $error')),
+                          SnackBar(content: Text(authErrorMessage(error))),
                         );
                       }
                     },

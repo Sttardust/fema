@@ -72,6 +72,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           final args = state.extra as Map<String, dynamic>? ?? const {};
           final verificationId = args['verificationId'] as String?;
           final redirectPath = args['redirectPath'] as String? ?? '/';
+          final phoneNumber = args['phoneNumber'] as String? ?? '';
 
           if (verificationId == null) {
             return const FemaIntroScreen();
@@ -80,6 +81,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return OtpScreen(
             verificationId: verificationId,
             redirectPath: redirectPath,
+            phoneNumber: phoneNumber,
           );
         },
       ),

@@ -9,6 +9,7 @@ import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/pill_text_field.dart';
 import '../../onboarding/domain/onboarding_provider.dart';
 import '../domain/auth_repository.dart';
+import '../domain/auth_error_messages.dart';
 
 class EmailSignupScreen extends ConsumerStatefulWidget {
   const EmailSignupScreen({super.key});
@@ -54,7 +55,7 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Sign up failed: ${e.toString()}')),
+            SnackBar(content: Text(authErrorMessage(e))),
           );
         }
       }

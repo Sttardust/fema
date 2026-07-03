@@ -8,6 +8,7 @@ import '../../../core/widgets/circle_icon_button.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/pill_text_field.dart';
 import '../domain/auth_repository.dart';
+import '../domain/auth_error_messages.dart';
 import '../../onboarding/domain/onboarding_provider.dart';
 
 class PhoneSignupScreen extends ConsumerStatefulWidget {
@@ -34,13 +35,14 @@ class _PhoneSignupScreenState extends ConsumerState<PhoneSignupScreen> {
             extra: {
               'verificationId': verificationId,
               'redirectPath': '/onboarding',
+              'phoneNumber': phoneNumber,
             },
           );
         },
         verificationFailed: (e) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.message ?? 'Verification failed')),
+            SnackBar(content: Text(authErrorMessage(e))),
           );
         },
       );
