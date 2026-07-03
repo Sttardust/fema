@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../auth/domain/auth_repository.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/soft_card.dart';
 import '../domain/user_profile_repository.dart';
 
 /// Account management — currently focused on account deletion, which the App
@@ -19,63 +21,166 @@ class AccountManagementScreen extends ConsumerWidget {
     final email = profile?.email ?? '—';
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.textHeadline,
-        elevation: 0,
-        title: const Text(
-          'Account Management',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
-        ),
-      ),
+      backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _InfoCard(label: 'Signed in as', value: email),
-              const SizedBox(height: 32),
-              const Text(
-                'Danger Zone',
-                style: TextStyle(
-                  color: AppColors.error,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+              // ── Top nav ──
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        shape: BoxShape.circle,
+                        boxShadow: const [
+                          BoxShadow(
+                            color: AppColors.cardShadow,
+                            blurRadius: 18,
+                            offset: Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.chevron_left,
+                        size: 22,
+                        color: AppColors.textBody,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Text(
+                    'Account & security',
+                    style: GoogleFonts.figtree(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textBody,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
+
+              // ── SECURITY group ──
+              Text(
+                'SECURITY',
+                style: GoogleFonts.figtree(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.grey,
                   letterSpacing: 0.5,
                 ),
               ),
-              const SizedBox(height: 12),
-              const Text(
-                'Permanently delete your account and all associated data. '
-                "This can't be undone.",
-                style: TextStyle(
-                  color: AppColors.grey,
-                  fontSize: 14,
-                  height: 1.45,
+              const SizedBox(height: 10),
+              SoftCard(
+                radius: 18,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  children: [
+                    _SecurityRow(
+                      icon: Icons.email_outlined,
+                      label: 'Signed in as',
+                      value: email,
+                    ),
+                    const _RowDivider(),
+                    _TappableRow(
+                      icon: Icons.lock_outline,
+                      label: 'Change password',
+                      onTap: () => _showChangePasswordSheet(context, ref, profile?.email),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: () => _confirmDelete(context, ref),
-                icon: const Icon(Icons.delete_outline,
-                    color: AppColors.error, size: 20),
-                label: const Text(
-                  'Delete my account',
-                  style: TextStyle(
-                      color: AppColors.error, fontWeight: FontWeight.w700),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.error),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+              const SizedBox(height: 28),
+
+              // ── DANGER ZONE group ──
+              Text(
+                'DANGER ZONE',
+                style: GoogleFonts.figtree(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.error,
+                  letterSpacing: 0.5,
                 ),
               ),
-              const Spacer(),
-              const _ComingSoonNote(),
+              const SizedBox(height: 10),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFF1D7D7)),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 18,
+                      offset: Offset(0, 6),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Delete account',
+                      style: GoogleFonts.figtree(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textBody,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Permanently removes your account and sign-in credentials. '
+                      'Any content you have authored is anonymised and remains '
+                      'visible to other learners. This cannot be undone.',
+                      style: GoogleFonts.figtree(
+                        fontSize: 12.5,
+                        color: AppColors.grey,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Delete button
+                    GestureDetector(
+                      onTap: () => _confirmDelete(context, ref),
+                      child: Container(
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: AppColors.errorSoft,
+                          borderRadius: BorderRadius.circular(23),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.delete_outline,
+                              size: 16,
+                              color: AppColors.error,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Delete my account',
+                              style: GoogleFonts.figtree(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.error,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -83,33 +188,97 @@ class AccountManagementScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _showChangePasswordSheet(
+    BuildContext context,
+    WidgetRef ref,
+    String? email,
+  ) async {
+    if (email == null || email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No email on file — contact support')),
+      );
+      return;
+    }
+    try {
+      await ref.read(authRepositoryProvider).sendPasswordResetEmail(email);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Password reset email sent to $email')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not send reset email: $e')),
+      );
+    }
+  }
+
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete account?',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-        content: const Text(
-          'This will permanently erase your profile, content, and progress. '
-          'You will be signed out.',
-          style: TextStyle(color: AppColors.grey, height: 1.4),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Delete account?',
+                style: GoogleFonts.figtree(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textBody,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'This will permanently erase your profile, content, and progress. '
+                'You will be signed out.',
+                style: GoogleFonts.figtree(
+                  fontSize: 14,
+                  color: AppColors.grey,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.figtree(
+                          color: AppColors.grey,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text(
+                        'Delete',
+                        style: GoogleFonts.figtree(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel',
-                style: TextStyle(color: AppColors.grey)),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
       ),
     );
 
@@ -131,33 +300,57 @@ class AccountManagementScreen extends ConsumerWidget {
   }
 }
 
-class _InfoCard extends StatelessWidget {
+// ─── Row Widgets ─────────────────────────────────────────────────────────────
+
+class _SecurityRow extends StatelessWidget {
+  final IconData icon;
   final String label;
   final String value;
-  const _InfoCard({required this.label, required this.value});
+
+  const _SecurityRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       child: Row(
         children: [
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(color: AppColors.grey, fontSize: 14),
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: AppColors.primarySoft,
+              borderRadius: BorderRadius.circular(11),
             ),
+            alignment: Alignment.center,
+            child: Icon(icon, size: 16, color: AppColors.primary),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppColors.textHeadline,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.figtree(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textBody,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: GoogleFonts.figtree(
+                    fontSize: 12,
+                    color: AppColors.grey,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -166,29 +359,65 @@ class _InfoCard extends StatelessWidget {
   }
 }
 
-class _ComingSoonNote extends StatelessWidget {
-  const _ComingSoonNote();
+class _TappableRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _TappableRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.info_outline, size: 16, color: AppColors.primary),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Full account deletion (with backend cleanup) ships in a follow-up.',
-              style: TextStyle(fontSize: 12, color: AppColors.primary),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: AppColors.primarySoft,
+                borderRadius: BorderRadius.circular(11),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, size: 16, color: AppColors.primary),
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.figtree(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textBody,
+                ),
+              ),
+            ),
+            const Icon(Icons.chevron_right, size: 16, color: AppColors.grey),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _RowDivider extends StatelessWidget {
+  const _RowDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Divider(
+      height: 1,
+      thickness: 1,
+      indent: 62,
+      endIndent: 16,
+      color: AppColors.greyLight,
     );
   }
 }
