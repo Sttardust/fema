@@ -419,7 +419,6 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
       // restore the original document so the lesson keeps its existing file on save.
       if (_documentUrl == null && _pendingDocDeletion != null) {
         _documentUrl = _pendingDocDeletion;
-        _documentName = _docUpload.fileName ?? _documentName;
         _pendingDocDeletion = null;
         _docUpload = _UploadState(
           phase: _UploadPhase.done,
