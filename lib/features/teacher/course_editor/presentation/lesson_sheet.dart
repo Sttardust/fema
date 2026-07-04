@@ -297,6 +297,102 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
     }
   }
 
+  // ── Video link (external hosting — no Firebase Storage needed) ────────────
+
+  Future<void> _promptVideoLink() async {
+    // Prefill with the current link when editing an externally-hosted video.
+    final initial = (_videoUrl != null &&
+            _videoUrl!.isNotEmpty &&
+            !LessonUploadController.isStorageUrl(_videoUrl!))
+        ? _videoUrl!
+        : '';
+    final ctrl = TextEditingController(text: initial);
+
+    final url = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final valid = LessonUploadController.isValidVideoLink(ctrl.text.trim());
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(
+              'Video link',
+              style: GoogleFonts.figtree(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textBody,
+              ),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Paste a direct link to the video file (MP4). Works with any host.',
+                  style: GoogleFonts.figtree(fontSize: 13, color: AppColors.grey),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  key: const Key('video-link-field'),
+                  controller: ctrl,
+                  autofocus: true,
+                  keyboardType: TextInputType.url,
+                  onChanged: (_) => setDialogState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'https://…/lesson.mp4',
+                    hintStyle: GoogleFonts.figtree(fontSize: 14, color: AppColors.grey),
+                  ),
+                  style: GoogleFonts.figtree(fontSize: 14, color: AppColors.textBody),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.figtree(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.grey,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed:
+                    valid ? () => Navigator.of(ctx).pop(ctrl.text.trim()) : null,
+                child: Text(
+                  'Add link',
+                  style: GoogleFonts.figtree(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: valid ? AppColors.primary : AppColors.grey,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (url == null || !mounted) return;
+    setState(() {
+      // Deferred deletion: keep the original video queued for cleanup after a
+      // successful save (??= so repeated replaces still target the original;
+      // intermediate session uploads are cleaned up via _sessionUploads).
+      if (_videoUrl != null && _videoUrl!.isNotEmpty && _videoUrl != url) {
+        _pendingVideoDeletion ??= _videoUrl;
+      }
+      _videoUrl = url;
+      _videoUpload = _UploadState(
+        phase: _UploadPhase.done,
+        url: url,
+        fileName: Uri.parse(url).host,
+      );
+    });
+  }
+
   void _cancelVideoUpload() {
     _videoUpload.task?.cancel();
     if (!mounted) return;
@@ -612,17 +708,30 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
     final phase = _videoUpload.phase;
 
     if (phase == _UploadPhase.done) {
+      final isLinked = _videoUpload.url != null &&
+          !LessonUploadController.isStorageUrl(_videoUpload.url!);
       return Row(
         children: [
           const Icon(Icons.check_circle, size: 18, color: Color(0xFF2BB37A)),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Video uploaded',
+              isLinked ? 'Video linked' : 'Video uploaded',
               style: GoogleFonts.figtree(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textBody,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: _promptVideoLink,
+            child: Text(
+              isLinked ? 'Edit link' : 'Link',
+              style: GoogleFonts.figtree(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
               ),
             ),
           ),
@@ -701,36 +810,53 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
     }
 
     // Idle
-    return GestureDetector(
-      onTap: _pickAndUploadVideo,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.cloud_upload_outlined, size: 18, color: Colors.white),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: _pickAndUploadVideo,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.cloud_upload_outlined, size: 18, color: Colors.white),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Upload video',
+                style: GoogleFonts.figtree(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textBody,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'MP4 up to 500 MB',
+                style: GoogleFonts.figtree(fontSize: 11.5, color: AppColors.grey),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Upload video',
+        ),
+        const SizedBox(height: 4),
+        TextButton(
+          onPressed: _promptVideoLink,
+          child: Text(
+            'Paste video link instead',
             style: GoogleFonts.figtree(
-              fontSize: 13,
+              fontSize: 12.5,
               fontWeight: FontWeight.w600,
-              color: AppColors.textBody,
+              color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            'MP4 up to 500 MB',
-            style: GoogleFonts.figtree(fontSize: 11.5, color: AppColors.grey),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

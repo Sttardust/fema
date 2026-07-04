@@ -196,5 +196,47 @@ void main() {
       // Upload video zone disappears.
       expect(find.text('Upload video', skipOffstage: false), findsNothing);
     });
+
+    testWidgets('lesson sheet accepts a pasted video link', (tester) async {
+      _setPhoneSize(tester);
+
+      await tester.pumpWidget(
+        _wrap(
+          LessonsStep(courseId: 'c1', onContinue: () {}),
+          overrides: _lessonsOverride(_fixtures),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.text('Add lesson'));
+      await tester.pumpAndSettle();
+
+      // Idle zone offers the link alternative.
+      await tester.tap(find.text('Paste video link instead', skipOffstage: false));
+      await tester.pumpAndSettle();
+
+      // Dialog: confirm is disabled until a valid http(s) URL is entered.
+      final addLink = find.text('Add link');
+      expect(addLink, findsOneWidget);
+      await tester.enterText(
+          find.byKey(const Key('video-link-field')), 'not a url');
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextButton>(
+        find.ancestor(of: addLink, matching: find.byType(TextButton)),
+      ).onPressed, isNull);
+
+      await tester.enterText(
+          find.byKey(const Key('video-link-field')),
+          'https://cdn.example.com/lesson.mp4');
+      await tester.pumpAndSettle();
+      await tester.tap(addLink);
+      await tester.pumpAndSettle();
+
+      // Zone flips to the linked/done state.
+      expect(find.text('Video linked', skipOffstage: false), findsOneWidget);
+      expect(find.text('Upload video', skipOffstage: false), findsNothing);
+    });
   });
 }
