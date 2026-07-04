@@ -324,6 +324,14 @@ class _CourseRow extends ConsumerWidget {
                       publish ? 'Course published' : 'Course unpublished')),
             );
           }
+        } catch (_) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text(
+                      "Couldn't update course status. Try again.")),
+            );
+          }
         } finally {
           onBusyChanged(false);
         }
