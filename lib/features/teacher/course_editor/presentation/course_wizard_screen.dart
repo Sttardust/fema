@@ -116,6 +116,8 @@ class _CourseWizardScreenState extends ConsumerState<CourseWizardScreen> {
 
         if (!mounted) return;
         ref.invalidate(teacherCoursesProvider);
+        // Basics edits on an already-published course are student-visible.
+        ref.invalidate(coursesProvider);
         setState(() {
           _courseTitle = data.title;
           _step = 1;

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -129,6 +130,11 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
   String? _pendingVideoDeletion;
   String? _pendingDocDeletion;
 
+  // URLs uploaded during this sheet session. A successful save claims the
+  // ones the lesson now references; whatever is left when the sheet goes
+  // away (dismissed, or replaced mid-session) is an orphan to clean up.
+  final Set<String> _sessionUploads = {};
+
   @override
   void initState() {
     super.initState();
@@ -173,6 +179,9 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
   void dispose() {
     _videoUpload.task?.cancel();
     _docUpload.task?.cancel();
+    for (final url in _sessionUploads) {
+      unawaited(LessonUploadController.deleteByUrl(url));
+    }
     _titleCtrl.dispose();
     _descCtrl.dispose();
     _durationCtrl.dispose();
@@ -260,6 +269,7 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
       await task;
       final url = await task.snapshot.ref.getDownloadURL();
       if (!mounted || !identical(task, _videoUpload.task)) return;
+      _sessionUploads.add(url);
       setState(() {
         _videoUrl = url;
         _videoUpload = _UploadState(
@@ -383,6 +393,7 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
       await task;
       final url = await task.snapshot.ref.getDownloadURL();
       if (!mounted || !identical(task, _docUpload.task)) return;
+      _sessionUploads.add(url);
       setState(() {
         _documentUrl = url;
         _documentName = picked.name;
@@ -483,20 +494,27 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
         documentName: _documentName?.isNotEmpty == true ? _documentName : null,
       );
 
+      // The lesson now references these — dispose must not clean them up.
+      if (savedVideoUrl != null) _sessionUploads.remove(savedVideoUrl);
+      if (_documentUrl != null) _sessionUploads.remove(_documentUrl);
+
       // Perform deferred storage deletions only after the Firestore write
       // succeeds, so that dismissing without saving leaves storage intact.
       if (_pendingVideoDeletion != null && _pendingVideoDeletion != savedVideoUrl) {
         await LessonUploadController.deleteByUrl(_pendingVideoDeletion!);
+        _sessionUploads.remove(_pendingVideoDeletion);
         _pendingVideoDeletion = null;
       }
       if (_pendingDocDeletion != null && _pendingDocDeletion != _documentUrl) {
         await LessonUploadController.deleteByUrl(_pendingDocDeletion!);
+        _sessionUploads.remove(_pendingDocDeletion);
         _pendingDocDeletion = null;
       }
 
       if (!mounted) return;
       ref.invalidate(courseEditorLessonsProvider(widget.courseId));
       ref.invalidate(teacherCoursesProvider);
+      ref.invalidate(coursesProvider);
       Navigator.of(context).pop();
     } catch (_) {
       if (!mounted) return;

@@ -66,12 +66,23 @@ class LessonUploadController {
               fileName: fileName))
           .putFile(file, SettableMetadata(contentType: mimeFor(fileName)));
 
-  /// Deletes the object a download URL points at. Missing objects are fine
-  /// (already-deleted or console-managed files).
+  /// True only for URLs [FirebaseStorage.refFromURL] can resolve — gs:// or
+  /// Firebase Storage download URLs. Legacy seeds may point at external hosts.
+  static bool isStorageUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    if (uri.scheme == 'gs') return uri.host.isNotEmpty;
+    return uri.scheme == 'https' && uri.host == 'firebasestorage.googleapis.com';
+  }
+
+  /// Best-effort delete of the object a download URL points at. Missing
+  /// objects and non-Storage URLs (legacy/external seeds) are fine — a
+  /// cleanup failure must never abort the lesson/course delete around it.
   static Future<void> deleteByUrl(String downloadUrl) async {
+    if (!isStorageUrl(downloadUrl)) return;
     try {
       await FirebaseStorage.instance.refFromURL(downloadUrl).delete();
-    } on FirebaseException catch (_) {
+    } catch (_) {
       // object-not-found or permission on legacy paths — nothing to clean up
     }
   }

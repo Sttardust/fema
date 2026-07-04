@@ -20,4 +20,19 @@ void main() {
     expect(LessonUploadController.isAllowedDocument('a.doc'), true);
     expect(LessonUploadController.isAllowedDocument('a.exe'), false);
   });
+
+  test('storage URL gate accepts only Firebase Storage URLs', () {
+    expect(
+      LessonUploadController.isStorageUrl(
+          'https://firebasestorage.googleapis.com/v0/b/fema-b608b.appspot.com/o/lesson-videos%2Fu1%2Fc1%2Fl1.mp4?alt=media&token=t'),
+      true,
+    );
+    expect(
+      LessonUploadController.isStorageUrl('gs://fema-b608b.appspot.com/lesson-videos/x.mp4'),
+      true,
+    );
+    expect(LessonUploadController.isStorageUrl('https://example.com/video.mp4'), false);
+    expect(LessonUploadController.isStorageUrl(''), false);
+    expect(LessonUploadController.isStorageUrl('not a url'), false);
+  });
 }

@@ -318,6 +318,7 @@ class _CourseRow extends ConsumerWidget {
               .read(courseEditorRepositoryProvider)
               .setStatus(course.id, publish);
           ref.invalidate(teacherCoursesProvider);
+          ref.invalidate(coursesProvider);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -358,6 +359,7 @@ class _CourseRow extends ConsumerWidget {
               .read(courseEditorRepositoryProvider)
               .deleteCourse(course.id);
           ref.invalidate(teacherCoursesProvider);
+          ref.invalidate(coursesProvider);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Course deleted')),

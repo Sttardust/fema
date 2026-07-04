@@ -87,6 +87,7 @@ class _LessonsBody extends ConsumerWidget {
       if (context.mounted) {
         ref.invalidate(courseEditorLessonsProvider(courseId));
         ref.invalidate(teacherCoursesProvider);
+        ref.invalidate(coursesProvider);
       }
     } catch (_) {
       if (context.mounted) {
@@ -95,6 +96,7 @@ class _LessonsBody extends ConsumerWidget {
         );
         ref.invalidate(courseEditorLessonsProvider(courseId));
         ref.invalidate(teacherCoursesProvider);
+        ref.invalidate(coursesProvider);
       }
     }
   }
@@ -164,6 +166,7 @@ class _LessonsBody extends ConsumerWidget {
       if (context.mounted) {
         ref.invalidate(courseEditorLessonsProvider(courseId));
         ref.invalidate(teacherCoursesProvider);
+        ref.invalidate(coursesProvider);
       }
     } catch (_) {
       if (context.mounted) {

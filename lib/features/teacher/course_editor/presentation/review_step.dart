@@ -70,6 +70,7 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
           .read(courseEditorRepositoryProvider)
           .setStatus(widget.courseId, publish);
       ref.invalidate(teacherCoursesProvider);
+      ref.invalidate(coursesProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -120,6 +121,7 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
           .read(courseEditorRepositoryProvider)
           .deleteCourse(widget.courseId);
       ref.invalidate(teacherCoursesProvider);
+      ref.invalidate(coursesProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
