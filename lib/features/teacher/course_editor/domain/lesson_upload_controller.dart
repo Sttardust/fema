@@ -5,12 +5,22 @@ import 'package:firebase_storage/firebase_storage.dart';
 /// helpers are static (unit-tested); upload methods return the raw
 /// [UploadTask] so the UI drives progress and cancellation.
 class LessonUploadController {
-  static String videoPath({required String uid, required String courseId, required String lessonId}) =>
-      'lesson-videos/$uid/$courseId/$lessonId.mp4';
+  static String videoPath({
+    required String uid,
+    required String courseId,
+    required String lessonId,
+    required String uploadId,
+  }) =>
+      'lesson-videos/$uid/$courseId/$lessonId-$uploadId.mp4';
 
-  static String documentPath({required String uid, required String courseId,
-      required String lessonId, required String fileName}) =>
-      'lesson-docs/$uid/$courseId/$lessonId-${sanitizeFileName(fileName)}';
+  static String documentPath({
+    required String uid,
+    required String courseId,
+    required String lessonId,
+    required String uploadId,
+    required String fileName,
+  }) =>
+      'lesson-docs/$uid/$courseId/$lessonId-$uploadId-${sanitizeFileName(fileName)}';
 
   static String sanitizeFileName(String name) => name.replaceAll(RegExp(r'\s+'), '_');
 
@@ -28,16 +38,32 @@ class LessonUploadController {
     return 'application/msword';
   }
 
-  UploadTask startVideoUpload({required String uid, required String courseId,
-      required String lessonId, required File file}) =>
+  UploadTask startVideoUpload({
+    required String uid,
+    required String courseId,
+    required String lessonId,
+    required String uploadId,
+    required File file,
+  }) =>
       FirebaseStorage.instance
-          .ref(videoPath(uid: uid, courseId: courseId, lessonId: lessonId))
+          .ref(videoPath(uid: uid, courseId: courseId, lessonId: lessonId, uploadId: uploadId))
           .putFile(file, SettableMetadata(contentType: 'video/mp4'));
 
-  UploadTask startDocumentUpload({required String uid, required String courseId,
-      required String lessonId, required String fileName, required File file}) =>
+  UploadTask startDocumentUpload({
+    required String uid,
+    required String courseId,
+    required String lessonId,
+    required String uploadId,
+    required String fileName,
+    required File file,
+  }) =>
       FirebaseStorage.instance
-          .ref(documentPath(uid: uid, courseId: courseId, lessonId: lessonId, fileName: fileName))
+          .ref(documentPath(
+              uid: uid,
+              courseId: courseId,
+              lessonId: lessonId,
+              uploadId: uploadId,
+              fileName: fileName))
           .putFile(file, SettableMetadata(contentType: mimeFor(fileName)));
 
   /// Deletes the object a download URL points at. Missing objects are fine

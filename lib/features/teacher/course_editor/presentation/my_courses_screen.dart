@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/services/firestore_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/subject_visuals.dart';
 import '../../../../core/widgets/circle_icon_button.dart';
@@ -343,14 +344,15 @@ class _CourseRow extends ConsumerWidget {
 
         onBusyChanged(true);
         try {
-          // Delete uploaded media
-          for (final lesson in course.lessons) {
-            if (lesson.videoUrl != null) {
-              await LessonUploadController.deleteByUrl(lesson.videoUrl!);
-            }
-            if (lesson.documentUrl != null) {
-              await LessonUploadController.deleteByUrl(lesson.documentUrl!);
-            }
+          // Fetch lessons fresh so media added after the list loaded is included.
+          final lessons = await ref
+              .read(firestoreServiceProvider)
+              .getLessons(course.id);
+          for (final lesson in lessons) {
+            final videoUrl = lesson['videoUrl'] as String?;
+            final documentUrl = lesson['documentUrl'] as String?;
+            if (videoUrl != null) await LessonUploadController.deleteByUrl(videoUrl);
+            if (documentUrl != null) await LessonUploadController.deleteByUrl(documentUrl);
           }
           await ref
               .read(courseEditorRepositoryProvider)

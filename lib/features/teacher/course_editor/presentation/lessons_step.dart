@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/pill_button.dart';
 import '../../../../core/widgets/soft_card.dart';
 import '../../../../core/widgets/state_views.dart';
+import '../../../library/domain/library_provider.dart';
 import '../domain/course_editor_repository.dart';
 import '../domain/lesson_upload_controller.dart';
 import 'lesson_sheet.dart';
@@ -83,13 +84,17 @@ class _LessonsBody extends ConsumerWidget {
     final repo = ref.read(courseEditorRepositoryProvider);
     try {
       await repo.applyReorder(courseId, CourseEditorRepository.reorderPayload(ids));
-      if (context.mounted) ref.invalidate(courseEditorLessonsProvider(courseId));
+      if (context.mounted) {
+        ref.invalidate(courseEditorLessonsProvider(courseId));
+        ref.invalidate(teacherCoursesProvider);
+      }
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Couldn't reorder lessons. Please try again.")),
         );
         ref.invalidate(courseEditorLessonsProvider(courseId));
+        ref.invalidate(teacherCoursesProvider);
       }
     }
   }
@@ -156,7 +161,10 @@ class _LessonsBody extends ConsumerWidget {
 
       final repo = ref.read(courseEditorRepositoryProvider);
       await repo.deleteLesson(courseId, lesson['id'] as String);
-      if (context.mounted) ref.invalidate(courseEditorLessonsProvider(courseId));
+      if (context.mounted) {
+        ref.invalidate(courseEditorLessonsProvider(courseId));
+        ref.invalidate(teacherCoursesProvider);
+      }
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

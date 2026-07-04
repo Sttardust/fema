@@ -89,7 +89,9 @@ class _BasicsStepState extends State<BasicsStep> {
       _titleController.text = init.title;
       _descriptionController.text = init.description;
       _subject = init.subject.isEmpty ? null : init.subject;
-      _grade = init.grade.isEmpty ? null : init.grade;
+      // Only set _grade if the value is actually one of the dropdown items;
+      // otherwise leave null so the hint shows instead of crashing DropdownButton.
+      _grade = _grades.contains(init.grade) ? init.grade : null;
       for (final obj in init.learningObjectives) {
         _addObjectiveRow(text: obj);
       }

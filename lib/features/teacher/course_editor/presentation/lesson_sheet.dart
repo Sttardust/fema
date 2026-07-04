@@ -10,6 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/pill_button.dart';
 import '../../../auth/domain/auth_repository.dart';
+import '../../../library/domain/library_provider.dart';
 import '../domain/course_editor_repository.dart';
 import '../domain/lesson_upload_controller.dart';
 
@@ -216,12 +217,15 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
     }
 
     final lessonId = _lessonId();
+
+    final uploadId = DateTime.now().millisecondsSinceEpoch.toString();
     final controller = LessonUploadController();
     final file = File(picked.path!);
     final task = controller.startVideoUpload(
       uid: uid,
       courseId: widget.courseId,
       lessonId: lessonId,
+      uploadId: uploadId,
       file: file,
     );
 
@@ -268,22 +272,16 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
       // Cancelled task throws FirebaseException — reset to idle silently
       if (!mounted || !identical(task, _videoUpload.task)) return;
       if (e.code == 'canceled') {
-        setState(() {
-          _videoUpload = const _UploadState();
-        });
+        _cancelVideoUpload();
       } else {
-        setState(() {
-          _videoUpload = const _UploadState();
-        });
+        _cancelVideoUpload();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Upload failed. Try again.')),
         );
       }
     } catch (_) {
       if (!mounted || !identical(task, _videoUpload.task)) return;
-      setState(() {
-        _videoUpload = const _UploadState();
-      });
+      _cancelVideoUpload();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Upload failed. Try again.')),
       );
@@ -294,7 +292,19 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
     _videoUpload.task?.cancel();
     if (!mounted) return;
     setState(() {
-      _videoUpload = const _UploadState();
+      // If this was a Replace flow (old URL was stashed and _videoUrl is null),
+      // restore the original video so the lesson keeps its existing video on save.
+      if (_videoUrl == null && _pendingVideoDeletion != null) {
+        _videoUrl = _pendingVideoDeletion;
+        _pendingVideoDeletion = null;
+        _videoUpload = _UploadState(
+          phase: _UploadPhase.done,
+          url: _videoUrl,
+          fileName: 'Uploaded video',
+        );
+      } else {
+        _videoUpload = const _UploadState();
+      }
     });
   }
 
@@ -327,19 +337,27 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
       return;
     }
 
+    // Deferred deletion: stash old document URL before replacing.
+    if (_documentUrl != null && _documentUrl!.isNotEmpty) {
+      _pendingDocDeletion = _documentUrl;
+    }
+
     final lessonId = _lessonId();
+    final uploadId = DateTime.now().millisecondsSinceEpoch.toString();
     final controller = LessonUploadController();
     final file = File(picked.path!);
     final task = controller.startDocumentUpload(
       uid: uid,
       courseId: widget.courseId,
       lessonId: lessonId,
+      uploadId: uploadId,
       fileName: picked.name,
       file: file,
     );
 
     if (!mounted) return;
     setState(() {
+      _documentUrl = null;
       _docUpload = _UploadState(
         phase: _UploadPhase.uploading,
         task: task,
@@ -364,7 +382,7 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
     try {
       await task;
       final url = await task.snapshot.ref.getDownloadURL();
-      if (!mounted) return;
+      if (!mounted || !identical(task, _docUpload.task)) return;
       setState(() {
         _documentUrl = url;
         _documentName = picked.name;
@@ -375,28 +393,43 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
         );
       });
     } on FirebaseException catch (e) {
-      if (!mounted) return;
+      if (!mounted || !identical(task, _docUpload.task)) return;
       if (e.code == 'canceled') {
-        setState(() {
-          _docUpload = const _UploadState();
-        });
+        _cancelDocUpload();
       } else {
-        setState(() {
-          _docUpload = const _UploadState();
-        });
+        _cancelDocUpload();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Upload failed. Try again.')),
         );
       }
     } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _docUpload = const _UploadState();
-      });
+      if (!mounted || !identical(task, _docUpload.task)) return;
+      _cancelDocUpload();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Upload failed. Try again.')),
       );
     }
+  }
+
+  void _cancelDocUpload() {
+    _docUpload.task?.cancel();
+    if (!mounted) return;
+    setState(() {
+      // If this was a Replace flow (old doc URL was stashed and _documentUrl is null),
+      // restore the original document so the lesson keeps its existing file on save.
+      if (_documentUrl == null && _pendingDocDeletion != null) {
+        _documentUrl = _pendingDocDeletion;
+        _documentName = _docUpload.fileName ?? _documentName;
+        _pendingDocDeletion = null;
+        _docUpload = _UploadState(
+          phase: _UploadPhase.done,
+          url: _documentUrl,
+          fileName: _documentName,
+        );
+      } else {
+        _docUpload = const _UploadState();
+      }
+    });
   }
 
   void _removeDocument() {
@@ -464,6 +497,7 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
 
       if (!mounted) return;
       ref.invalidate(courseEditorLessonsProvider(widget.courseId));
+      ref.invalidate(teacherCoursesProvider);
       Navigator.of(context).pop();
     } catch (_) {
       if (!mounted) return;
@@ -755,13 +789,7 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
               ),
               IconButton(
                 icon: const Icon(Icons.close, size: 16, color: AppColors.grey),
-                onPressed: () {
-                  _docUpload.task?.cancel();
-                  if (!mounted) return;
-                  setState(() {
-                    _docUpload = const _UploadState();
-                  });
-                },
+                onPressed: _cancelDocUpload,
               ),
             ],
           ),

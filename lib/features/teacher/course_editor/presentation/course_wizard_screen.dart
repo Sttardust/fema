@@ -115,6 +115,7 @@ class _CourseWizardScreenState extends ConsumerState<CourseWizardScreen> {
         );
 
         if (!mounted) return;
+        ref.invalidate(teacherCoursesProvider);
         setState(() {
           _courseTitle = data.title;
           _step = 1;
@@ -290,7 +291,6 @@ class _CourseWizardScreenState extends ConsumerState<CourseWizardScreen> {
                       initial: initialData,
                       onSubmit: _onBasicsSubmit,
                     ),
-                    // Task 7: real lessons step (Task 8 replaces Review stub).
                     _courseId == null
                         ? const _StubStep('Lessons')
                         : LessonsStep(
@@ -341,7 +341,7 @@ class _StepIndicator extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Stub step placeholder (replaced by Tasks 7 and 8)
+// Stub step placeholder
 // ---------------------------------------------------------------------------
 
 class _StubStep extends StatelessWidget {
