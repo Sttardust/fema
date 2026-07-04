@@ -12,6 +12,7 @@ import '../../../library/domain/models.dart';
 import '../../../profile/domain/user_profile_repository.dart';
 import '../domain/course_editor_repository.dart';
 import 'basics_step.dart';
+import 'lessons_step.dart';
 
 // ---------------------------------------------------------------------------
 // Step-indicator metadata
@@ -287,8 +288,13 @@ class _CourseWizardScreenState extends ConsumerState<CourseWizardScreen> {
                       initial: initialData,
                       onSubmit: _onBasicsSubmit,
                     ),
-                    // Tasks 7 and 8 replace these stubs.
-                    const _StubStep('Lessons'),
+                    // Task 7: real lessons step (Task 8 replaces Review stub).
+                    _courseId == null
+                        ? const _StubStep('Lessons')
+                        : LessonsStep(
+                            courseId: _courseId!,
+                            onContinue: () => setState(() => _step = 2),
+                          ),
                     const _StubStep('Review'),
                   ],
                 ),
