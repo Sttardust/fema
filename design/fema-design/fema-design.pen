@@ -23873,7 +23873,7 @@
                   "fill": {
                     "type": "image",
                     "enabled": true,
-                    "url": "./images/generated-1783114929865.png",
+                    "url": "images/generated-1783114929865.png",
                     "mode": "fill"
                   },
                   "effect": {
@@ -24364,7 +24364,7 @@
                   "fill": {
                     "type": "image",
                     "enabled": true,
-                    "url": "./images/generated-1783114950372.png",
+                    "url": "images/generated-1783114950372.png",
                     "mode": "fill"
                   },
                   "effect": {
@@ -24856,7 +24856,7 @@
                   "fill": {
                     "type": "image",
                     "enabled": true,
-                    "url": "./images/generated-1783114954812.png",
+                    "url": "images/generated-1783114954812.png",
                     "mode": "fill"
                   },
                   "effect": {
@@ -25795,7 +25795,7 @@
                   "type": "frame",
                   "id": "wLYMC",
                   "x": 0,
-                  "y": 578.5946704067321,
+                  "y": 584.9758144157631,
                   "name": "Field Objectives",
                   "width": "fill_container(342)",
                   "layout": "vertical",
@@ -25955,7 +25955,7 @@
                   "type": "frame",
                   "id": "XPln9",
                   "x": 0,
-                  "y": 419.5596072931276,
+                  "y": 424.18680213511936,
                   "name": "Field Description",
                   "width": "fill_container(342)",
                   "layout": "vertical",
@@ -26007,7 +26007,7 @@
                   "type": "frame",
                   "id": "RCXMr",
                   "x": 0,
-                  "y": 321.20897615708276,
+                  "y": 324.75149190893177,
                   "name": "Field Grade",
                   "width": "fill_container(342)",
                   "layout": "vertical",
@@ -26070,7 +26070,7 @@
                   "type": "frame",
                   "id": "xTvXR",
                   "x": 0,
-                  "y": 222.85834502103788,
+                  "y": 225.3161816827442,
                   "name": "Field Subject",
                   "width": "fill_container(342)",
                   "layout": "vertical",
@@ -26133,7 +26133,7 @@
                   "type": "frame",
                   "id": "SRCD2",
                   "x": 0,
-                  "y": 124.507713884993,
+                  "y": 125.88087145655662,
                   "name": "Field Course title",
                   "width": "fill_container(342)",
                   "layout": "vertical",
@@ -26183,7 +26183,7 @@
                   "type": "frame",
                   "id": "fsXtg",
                   "x": 0,
-                  "y": 62.776998597475455,
+                  "y": 63.46934695288569,
                   "name": "Steps",
                   "width": "fill_container(342)",
                   "gap": 6,
