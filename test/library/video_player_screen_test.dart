@@ -185,5 +185,156 @@ void main() {
       expect(find.text('Previous'), findsOneWidget);
       expect(find.text('Next'), findsOneWidget);
     });
+
+    // ── Task 9 tests ──────────────────────────────────────────────────────────
+
+    testWidgets(
+        'text lesson renders body text and does NOT show "Video unavailable"',
+        (tester) async {
+      _setPhoneSize(tester);
+      const bodyText = 'A mixture is a combination of two or more substances.';
+      final lesson = Lesson(
+        id: 'lt1',
+        title: 'What is a Mixture?',
+        description: 'desc',
+        videoUrl: null,
+        contentHtml: bodyText,
+        durationMinutes: 8,
+      );
+      final course = Course(
+        id: 'ct1',
+        title: 'Chemistry Basics',
+        description: 'desc',
+        subject: CourseSubject.science,
+        grade: 'Grade 7',
+        thumbnailUrl: '',
+        lessons: [lesson],
+      );
+
+      await tester.pumpWidget(_wrap(
+        const VideoPlayerScreen(),
+        overrides: [
+          selectedCourseProvider.overrideWith((ref) => course),
+          selectedLessonProvider.overrideWith((ref) => lesson),
+        ],
+      ));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text(bodyText), findsOneWidget);
+      expect(find.text('Video unavailable'), findsNothing);
+    });
+
+    testWidgets('transcript tab shows transcript text when present',
+        (tester) async {
+      _setPhoneSize(tester);
+      const transcriptText =
+          'Today we cover the water cycle in detail.';
+      final lesson = Lesson(
+        id: 'lt2',
+        title: 'The Water Cycle',
+        description: 'desc',
+        videoUrl: 'https://example.com/video.mp4',
+        transcript: transcriptText,
+        durationMinutes: 15,
+      );
+      final course = Course(
+        id: 'ct2',
+        title: 'Earth Science',
+        description: 'desc',
+        subject: CourseSubject.science,
+        grade: 'Grade 6',
+        thumbnailUrl: '',
+        lessons: [lesson],
+      );
+
+      await tester.pumpWidget(_wrap(
+        const VideoPlayerScreen(),
+        overrides: [
+          selectedCourseProvider.overrideWith((ref) => course),
+          selectedLessonProvider.overrideWith((ref) => lesson),
+        ],
+      ));
+      await tester.pump();
+      await tester.pump();
+
+      // Tap the 'Transcript' chip to switch tabs.
+      await tester.tap(find.text('Transcript'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(transcriptText), findsOneWidget);
+    });
+
+    testWidgets('transcript tab shows empty state when transcript is null',
+        (tester) async {
+      _setPhoneSize(tester);
+      final lesson = Lesson(
+        id: 'lt3',
+        title: 'Intro',
+        description: 'desc',
+        videoUrl: null,
+        transcript: null,
+        durationMinutes: 5,
+      );
+      final course = Course(
+        id: 'ct3',
+        title: 'Math',
+        description: 'desc',
+        subject: CourseSubject.math,
+        grade: 'Grade 5',
+        thumbnailUrl: '',
+        lessons: [lesson],
+      );
+
+      await tester.pumpWidget(_wrap(
+        const VideoPlayerScreen(),
+        overrides: [
+          selectedCourseProvider.overrideWith((ref) => course),
+          selectedLessonProvider.overrideWith((ref) => lesson),
+        ],
+      ));
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.text('Transcript'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No transcript yet'), findsOneWidget);
+    });
+
+    testWidgets('worksheet row shows documentName when documentUrl is set',
+        (tester) async {
+      _setPhoneSize(tester);
+      final lesson = Lesson(
+        id: 'lw1',
+        title: 'Forces Lab',
+        description: 'desc',
+        videoUrl: null,
+        documentUrl: 'https://example.com/worksheet.pdf',
+        documentName: 'worksheet.pdf',
+        durationMinutes: 12,
+      );
+      final course = Course(
+        id: 'cw1',
+        title: 'Physics',
+        description: 'desc',
+        subject: CourseSubject.science,
+        grade: 'Grade 8',
+        thumbnailUrl: '',
+        lessons: [lesson],
+      );
+
+      await tester.pumpWidget(_wrap(
+        const VideoPlayerScreen(),
+        overrides: [
+          selectedCourseProvider.overrideWith((ref) => course),
+          selectedLessonProvider.overrideWith((ref) => lesson),
+        ],
+      ));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('worksheet.pdf'), findsOneWidget);
+    });
   });
 }

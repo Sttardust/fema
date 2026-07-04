@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/circle_icon_button.dart';
 import '../../../core/widgets/pill_button.dart';
@@ -157,19 +158,38 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen>
             ),
             const SizedBox(height: 12),
 
-            // ── 2. Video area ────────────────────────────────────────────────
+            // ── 2. Video / reading area ──────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: _VideoArea(
-                    videoState: _videoState,
-                    controller: _videoController,
-                  ),
-                ),
-              ),
+              child: lesson.videoUrl == null &&
+                      (lesson.contentHtml?.trim().isNotEmpty ?? false)
+                  ? ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 260),
+                      child: SoftCard(
+                        radius: 20,
+                        padding: const EdgeInsets.all(16),
+                        child: SingleChildScrollView(
+                          child: Text(
+                            lesson.contentHtml!,
+                            style: GoogleFonts.figtree(
+                              fontSize: 14,
+                              color: AppColors.textBody,
+                              height: 1.6,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: _VideoArea(
+                          videoState: _videoState,
+                          controller: _videoController,
+                        ),
+                      ),
+                    ),
             ),
             const SizedBox(height: 16),
 
@@ -196,6 +216,11 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen>
                       color: AppColors.grey,
                     ),
                   ),
+                  // Worksheet row — only when documentUrl is present
+                  if (lesson.documentUrl != null) ...[
+                    const SizedBox(height: 10),
+                    _WorksheetRow(lesson: lesson),
+                  ],
                 ],
               ),
             ),
@@ -537,47 +562,81 @@ class _TranscriptTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = lesson.contentHtml ??
-        'Welcome to our ${lesson.title.toLowerCase()} lesson! In '
-            'this video, we will explore the fascinating world of '
-            'classical mechanics. We will start by discussing '
-            "Newton's laws of motion, which form the foundation of "
-            'our understanding of how objects move. From the simple '
-            'act of throwing a ball to the complex orbits of '
-            'planets, these laws help us predict and explain the '
-            'behavior of physical systems.\n\nWe will also delve '
-            'into concepts like force, mass, and acceleration, '
-            'providing real-world examples to illustrate these '
-            'principles in action.\n\nAs we progress, we will '
-            'introduce the concept of energy and its various '
-            'forms, including kinetic and potential energy.';
+    final transcript = lesson.transcript?.trim();
+    final hasTranscript = transcript != null && transcript.isNotEmpty;
+
+    if (!hasTranscript) {
+      return const EmptyStateView(
+        icon: Icons.subtitles_outlined,
+        message: 'No transcript yet',
+      );
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Transcript',
-            style: GoogleFonts.figtree(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textBody,
-            ),
+      child: SoftCard(
+        padding: const EdgeInsets.all(16),
+        child: SelectableText(
+          transcript,
+          style: GoogleFonts.figtree(
+            color: AppColors.grey,
+            fontSize: 13.5,
+            height: 1.6,
           ),
-          const SizedBox(height: 10),
-          SoftCard(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              text,
-              style: GoogleFonts.figtree(
-                color: AppColors.textBody,
-                fontSize: 14,
-                height: 1.55,
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Worksheet row ────────────────────────────────────────────────────────────
+
+class _WorksheetRow extends StatelessWidget {
+  final Lesson lesson;
+  const _WorksheetRow({required this.lesson});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        try {
+          await launchUrl(
+            Uri.parse(lesson.documentUrl!),
+            mode: LaunchMode.externalApplication,
+          );
+        } catch (_) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Couldn\'t open the worksheet.')),
+            );
+          }
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.primarySoft,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.attach_file, size: 16, color: AppColors.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                lesson.documentName ?? 'Worksheet',
+                style: GoogleFonts.figtree(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-          ),
-        ],
+            const Icon(Icons.open_in_new, size: 14, color: AppColors.primary),
+          ],
+        ),
       ),
     );
   }
