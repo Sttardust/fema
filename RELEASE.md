@@ -84,52 +84,20 @@ After deployment, the in-app "Delete my account" button will perform full deleti
 
 No manual step required. Crash reports appear in the Firebase console after the first crash or forced test-crash from a release build.
 
-### f. First admin user — set-admin.js (no script exists yet)
+### f. First admin user — tool/set-admin.js
 
-No bootstrap admin script exists in the repo. `firestore.rules` references one, but it has not been created. Until it is, use the following one-off Node.js snippet. Save it anywhere outside the repo (e.g. `~/tools/set-admin.js`).
-
-```javascript
-// ~/tools/set-admin.js
-// Usage: GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json node set-admin.js <uid>
-const admin = require('firebase-admin');
-
-admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
-  projectId: 'fema-b608b',
-});
-
-const uid = process.argv[2];
-if (!uid) { console.error('Usage: node set-admin.js <uid>'); process.exit(1); }
-
-(async () => {
-  // 1. Set the custom claim — this is what Firestore rules read via
-  //    request.auth.token.role
-  await admin.auth().setCustomUserClaims(uid, { role: 'admin' });
-
-  // 2. Mirror the role in Firestore so the client UI can read it without
-  //    waiting for a token refresh
-  await admin.firestore()
-    .collection('users').doc(uid)
-    .set({ role: 'admin' }, { merge: true });
-
-  console.log(`Done. uid=${uid} is now admin.`);
-  process.exit(0);
-})().catch(err => { console.error(err); process.exit(1); });
-```
-
-Run it:
+The bootstrap script lives at `tool/set-admin.js` and accepts a uid **or** an
+email address (the account must have signed in to the app at least once):
 
 ```bash
-# Install firebase-admin once in the tools directory
-mkdir -p ~/tools && cd ~/tools && npm init -y && npm install firebase-admin
-
-# Export a service-account key downloaded from Firebase console →
-# Project settings → Service accounts → Generate new private key
+cd tool && npm install
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
-
-# Find the uid in Firebase console → Authentication → Users
-node set-admin.js <uid>
+node set-admin.js <uid-or-email>
 ```
+
+It sets the `role: 'admin'` custom claim (what `firestore.rules` reads via
+`request.auth.token.role`) and mirrors the role into the user's
+`users/{uid}` doc so the client UI picks it up without a token refresh.
 
 The user must **sign out and sign back in** after this so their ID token picks up the new custom claim.
 
@@ -186,6 +154,11 @@ Checklist:
 - [ ] Video plays end-to-end (requires a seeded `videoUrl`)
 - [ ] Teacher attendance save round-trips to Firestore
 - [ ] Admin console is reachable for an admin-role account
+- [ ] Course wizard end-to-end (requires deployed `storage.rules`): teacher
+      creates a course, uploads a video with transcript, attaches a
+      worksheet, publishes — course appears in the student library and the
+      video, transcript, and worksheet all open
+- [ ] Unpublishing the course removes it from the student library
 
 ### Upload to Play Console
 
