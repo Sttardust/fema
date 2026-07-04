@@ -24,6 +24,7 @@ appear in My Courses where the teacher can delete them.
 |---|---|
 | Lesson types | **Video** (device upload + transcript) or **Text** (written lesson body) — segmented toggle in the lesson sheet |
 | Lesson video | Upload from device to Firebase Storage, with progress + cancel + retry; **transcript text field accompanies every video** (feeds the player's Transcript tab) |
+| Document attachment | **Optional PDF/DOC worksheet on any lesson** (both types): uploaded to Storage, shown to students as an "Open worksheet" row in the lesson view (opens externally via the download URL) |
 | Publishing | Teacher publishes directly (Publish/Unpublish toggle); no approval queue |
 | Management | Full: edit course, add/edit/reorder/delete lessons, unpublish, delete course |
 | Draft saving | Auto-save on every step **plus an explicit "Save as draft & exit" button** on the Review step |
@@ -53,9 +54,10 @@ Fields the student-facing pages display, and where the wizard asks for them:
   (`draft`/`published`), plus new **`learningObjectives: List<String>`** and
   **`authorName: String`** (denormalized from the teacher's profile at
   creation); initializes `thumbnailUrl: ''`, `rating: 0`, `totalStudents: 0`.
-- `lessons/{id}` gains **`order` (int, 0-based)** and **`transcript: String?`**
-  (video lessons). Text lessons store their body in the existing
-  `contentHtml` field and leave `videoUrl` null. `getLessons` sorts
+- `lessons/{id}` gains **`order` (int, 0-based)**, **`transcript: String?`**
+  (video lessons), and **`documentUrl: String?` + `documentName: String?`**
+  (optional worksheet attachment, any lesson type). Text lessons store their
+  body in the existing `contentHtml` field and leave `videoUrl` null. `getLessons` sorts
   client-side by `order` with fallback to fetch position, so seeded lessons
   without the field keep working. The seed script adds `order` (and sample
   transcripts) for parity.
@@ -67,14 +69,18 @@ Fields the student-facing pages display, and where the wizard asks for them:
 
 ## Video upload
 
-- Storage path: `lesson-videos/{uid}/{courseId}/{lessonId}.mp4`.
-- New `storage.rules` block: write allowed iff `request.auth.uid == uid`,
-  `request.resource.contentType.matches('video/.*')`, and size ≤ 500 MB.
-  Public read stays (published-course playback incl. guests).
-- Client: `image_picker` `pickVideo` (gallery) → `firebase_storage` `putFile`
-  upload task → progress stream drives a progress bar with cancel; success
-  stores the download URL in the lesson's `videoUrl`. Replacing a video
-  deletes the old object first. Failure → error toast + retry affordance.
+- Storage paths: videos `lesson-videos/{uid}/{courseId}/{lessonId}.mp4`;
+  documents `lesson-docs/{uid}/{courseId}/{lessonId}-{fileName}`.
+- New `storage.rules` blocks: writes allowed iff `request.auth.uid == uid`;
+  videos must match `video/.*` and be ≤ 500 MB; documents must match
+  `application/pdf` or the Word MIME types and be ≤ 25 MB. Public read stays
+  (published-course playback and worksheet opening, incl. guests).
+- Client: `file_picker` (one dependency for both video and document picking) →
+  `firebase_storage` `putFile` upload task → progress stream drives a progress
+  bar with cancel; success stores the download URL in the lesson's `videoUrl`
+  (or `documentUrl` + `documentName`). Replacing a file deletes the old object
+  first. Failure → error toast + retry affordance. Students open worksheets
+  externally via `url_launcher`.
 - Ops prerequisite: Storage enabled on `fema-b608b` (RELEASE.md §3a). Until
   then uploads fail with a clear error toast; the wizard remains usable for
   text/draft work.
