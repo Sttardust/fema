@@ -8,6 +8,7 @@ String? computeRedirect({
   required bool isAuthenticated,
   required UserRole? role,
   required bool hasCompletedOnboarding,
+  bool isProfileLoading = false,
 }) {
   final isAuthRoute = location == '/login' ||
       location == '/signup' ||
@@ -33,6 +34,13 @@ String? computeRedirect({
   if (!isAuthenticated) {
     if (location == '/') return '/onboarding/intro';
     if (isStrictlyProtected) return '/onboarding/intro';
+    return null;
+  }
+
+  // Profile still resolving (e.g. right after sign-up/sign-in): hold the
+  // current screen instead of bouncing through the splash. Screens show
+  // their own loading states; once the profile lands we redirect properly.
+  if (isProfileLoading) {
     return null;
   }
 

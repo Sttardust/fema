@@ -63,7 +63,9 @@ class _ProfileGuestView extends StatelessWidget {
             SoftCard(
               radius: 20,
               padding: const EdgeInsets.all(20),
-              child: Column(
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
@@ -102,6 +104,7 @@ class _ProfileGuestView extends StatelessWidget {
                     ),
                   ),
                 ],
+                ),
               ),
             ),
             const SizedBox(height: 32),
@@ -157,7 +160,9 @@ class _ProfileBody extends ConsumerWidget {
             SoftCard(
               radius: 20,
               padding: const EdgeInsets.all(20),
-              child: Column(
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
@@ -213,6 +218,7 @@ class _ProfileBody extends ConsumerWidget {
                     ),
                   ),
                 ],
+                ),
               ),
             ),
             const SizedBox(height: 28),
@@ -314,7 +320,7 @@ class _ProfileBody extends ConsumerWidget {
     switch (p.role) {
       case UserRole.student:
         final grade = p.grade;
-        return grade != null && grade.isNotEmpty ? 'Student · Grade $grade' : 'Student';
+        return grade != null && grade.isNotEmpty ? 'Student · $grade' : 'Student';
       case UserRole.teacher:
         return 'Teacher';
       case UserRole.admin:

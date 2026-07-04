@@ -3,19 +3,30 @@ import 'package:fema/routes/app_redirect.dart';
 import 'package:fema/features/onboarding/domain/onboarding_provider.dart';
 
 void main() {
-  String? redirect(String loc, {bool loading = false, bool authed = false, UserRole? role}) =>
+  String? redirect(String loc,
+          {bool loading = false,
+          bool authed = false,
+          bool profileLoading = false,
+          UserRole? role}) =>
       computeRedirect(
         location: loc,
         isLoading: loading,
         isAuthenticated: authed,
         role: role,
         hasCompletedOnboarding: role != null && role != UserRole.none,
+        isProfileLoading: profileLoading,
       );
 
   group('loading', () {
     test('any route bounces to splash while loading', () {
       expect(redirect('/home', loading: true), '/');
       expect(redirect('/', loading: true), null);
+    });
+    test('profile loading holds position instead of splashing', () {
+      expect(redirect('/signup', authed: true, profileLoading: true), null);
+      expect(redirect('/login', authed: true, profileLoading: true), null);
+      expect(redirect('/', authed: true, profileLoading: true), null);
+      expect(redirect('/onboarding', authed: true, profileLoading: true), null);
     });
   });
 

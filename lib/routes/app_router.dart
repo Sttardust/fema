@@ -27,12 +27,18 @@ import '../features/teacher/presentation/teacher_home_screen.dart';
 import '../features/profile/domain/user_profile_repository.dart';
 import 'app_redirect.dart';
 
+/// Keeps the splash on screen for a minimum branding beat at cold start.
+final splashGateProvider = FutureProvider<void>(
+  (ref) => Future<void>.delayed(const Duration(seconds: 2)),
+);
+
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
   final user = authState.asData?.value;
   final userProfile = ref.watch(currentUserProfileProvider);
+  final splashDone = ref.watch(splashGateProvider).hasValue;
 
-  final isLoading = authState.isLoading || (user != null && userProfile.isLoading);
+  final isLoading = authState.isLoading || !splashDone;
   final profile = userProfile.asData?.value;
   final hasCompletedOnboarding = profile?.hasCompletedOnboarding ?? false;
 
@@ -44,6 +50,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       isAuthenticated: user != null,
       role: profile?.role,
       hasCompletedOnboarding: hasCompletedOnboarding,
+      isProfileLoading: user != null && userProfile.isLoading,
     ),
     routes: [
       GoRoute(
