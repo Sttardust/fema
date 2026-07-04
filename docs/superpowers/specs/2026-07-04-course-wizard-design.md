@@ -22,21 +22,46 @@ appear in My Courses where the teacher can delete them.
 
 | Decision | Choice |
 |---|---|
-| Lesson video | Upload from device to Firebase Storage, with progress + cancel + retry |
+| Lesson types | **Video** (device upload + transcript) or **Text** (written lesson body) — segmented toggle in the lesson sheet |
+| Lesson video | Upload from device to Firebase Storage, with progress + cancel + retry; **transcript text field accompanies every video** (feeds the player's Transcript tab) |
 | Publishing | Teacher publishes directly (Publish/Unpublish toggle); no approval queue |
 | Management | Full: edit course, add/edit/reorder/delete lessons, unpublish, delete course |
+| Draft saving | Auto-save on every step **plus an explicit "Save as draft & exit" button** on the Review step |
 | Thumbnails | Not in v1 — flat subject tints continue to render course art |
 | `language` field | Dropped (model has no field; nothing filters by it) |
+
+## Authoring ↔ consumption audit
+
+Fields the student-facing pages display, and where the wizard asks for them:
+
+| Displayed on course pages | Wizard input |
+|---|---|
+| Title, subject, grade (banner, cards) | Basics step |
+| Description ("About this course") | Basics step |
+| **"What you'll learn" bullets** (Overview card — designed but never rendered for lack of a field) | Basics step: optional objectives list (add/remove rows, max 5) → new `learningObjectives: List<String>` on the course; Overview card renders when non-empty |
+| **Teacher card** (Overview — designed but never rendered) | No input needed: `authorName` is denormalized from the teacher's profile onto the course at creation; Overview renders the card when present |
+| Lessons count + total duration (banner) | Derived from lessons |
+| Lesson title, duration, video (player) | Lesson sheet |
+| **Transcript tab** (player) | Lesson sheet: transcript field on video lessons → new `transcript` field on lessons; player Transcript tab renders it (fallback "No transcript yet") |
+| **Article/text lessons** (player shows 'Article' kind) | Lesson sheet Text mode: body text → existing `contentHtml` field; player shows a reading card instead of the video box for text lessons |
+| Rating, student counts | Not authored (defaults) |
 
 ## Data model
 
 - `courses/{id}`: existing fields; wizard writes `title`, `description`,
   `subject` (lowercase enum string), `grade`, `ownerId`, `status`
-  (`draft`/`published`), and initializes `thumbnailUrl: ''`, `rating: 0`,
-  `totalStudents: 0`.
-- `lessons/{id}` gains **`order` (int, 0-based)**. `getLessons` sorts
+  (`draft`/`published`), plus new **`learningObjectives: List<String>`** and
+  **`authorName: String`** (denormalized from the teacher's profile at
+  creation); initializes `thumbnailUrl: ''`, `rating: 0`, `totalStudents: 0`.
+- `lessons/{id}` gains **`order` (int, 0-based)** and **`transcript: String?`**
+  (video lessons). Text lessons store their body in the existing
+  `contentHtml` field and leave `videoUrl` null. `getLessons` sorts
   client-side by `order` with fallback to fetch position, so seeded lessons
-  without the field keep working. The seed script adds `order` for parity.
+  without the field keep working. The seed script adds `order` (and sample
+  transcripts) for parity.
+- Course model/parsers extend accordingly; the Course Overview tab renders the
+  "What you'll learn" and teacher cards when their fields are present, and the
+  player's Transcript tab reads `lesson.transcript`.
 - Delete course = delete each lesson doc, delete Storage videos under the
   course's folder, then delete the course doc (client-side loop).
 
@@ -78,14 +103,18 @@ appear in My Courses where the teacher can delete them.
   number tile, title, video status line (green check "Video · mm:ss" / amber
   "No video yet"), overflow (Edit, Delete). "Add lesson" soft button opens the
   sheet. Continue requires ≥ 1 lesson.
-- **Lesson sheet**: title, description, duration (minutes), upload zone
-  (`primarySoft` card: idle "Upload video · MP4 up to 500 MB" → uploading
-  filename + % + progress track + cancel → done: green check + duration).
-  Save lesson writes the lesson doc.
+- **Lesson sheet** (Pencil nodes `ieBgI` video mode / `btMMR` text mode):
+  Video|Text segmented toggle; title, description, duration (minutes); Video
+  mode adds the upload zone (`primarySoft` card: idle "Upload video · MP4 up
+  to 500 MB" → uploading filename + % + progress track + cancel → done: green
+  check + duration) and a **Transcript** multiline field; Text mode swaps the
+  upload zone + transcript for a **Lesson content** body field. Save lesson
+  writes the lesson doc.
 - **Review & Publish**: summary card, readiness checklist (lessons count,
-  videos uploaded, description written — informational; only ≥1 lesson blocks
-  publishing), status card with Draft/Published chip + Publish/Unpublish
-  button, danger "Delete course" row (confirm dialog per design system).
+  videos uploaded, transcripts coverage, description written — informational;
+  only ≥1 lesson blocks publishing), status card with Draft/Published chip +
+  Publish/Unpublish button + secondary **"Save as draft & exit"** (returns to
+  My Courses), danger "Delete course" row (confirm dialog per design system).
 
 ## Rules & routing
 
