@@ -83,14 +83,14 @@ class _LessonsBody extends ConsumerWidget {
     final repo = ref.read(courseEditorRepositoryProvider);
     try {
       await repo.applyReorder(courseId, CourseEditorRepository.reorderPayload(ids));
-      ref.invalidate(courseEditorLessonsProvider(courseId));
+      if (context.mounted) ref.invalidate(courseEditorLessonsProvider(courseId));
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Couldn't reorder lessons. Please try again.")),
         );
+        ref.invalidate(courseEditorLessonsProvider(courseId));
       }
-      ref.invalidate(courseEditorLessonsProvider(courseId));
     }
   }
 
@@ -156,7 +156,7 @@ class _LessonsBody extends ConsumerWidget {
 
       final repo = ref.read(courseEditorRepositoryProvider);
       await repo.deleteLesson(courseId, lesson['id'] as String);
-      ref.invalidate(courseEditorLessonsProvider(courseId));
+      if (context.mounted) ref.invalidate(courseEditorLessonsProvider(courseId));
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

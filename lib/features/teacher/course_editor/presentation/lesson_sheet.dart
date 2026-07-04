@@ -123,6 +123,11 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
   String? _documentUrl;
   String? _documentName;
 
+  // Deferred deletions — only executed after a successful save so that
+  // dismissing the sheet without saving leaves storage objects intact.
+  String? _pendingVideoDeletion;
+  String? _pendingDocDeletion;
+
   @override
   void initState() {
     super.initState();
@@ -205,13 +210,9 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
     final picked = result.files.single;
     if (picked.path == null) return;
 
-    // Delete old video if replacing
+    // Deferred deletion: stash old URL — only deleted after a successful save.
     if (_videoUrl != null && _videoUrl!.isNotEmpty) {
-      await LessonUploadController.deleteByUrl(_videoUrl!);
-      if (!mounted) return;
-      setState(() {
-        _videoUrl = null;
-      });
+      _pendingVideoDeletion = _videoUrl;
     }
 
     final lessonId = _lessonId();
@@ -226,6 +227,7 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
 
     if (!mounted) return;
     setState(() {
+      _videoUrl = null;
       _videoUpload = _UploadState(
         phase: _UploadPhase.uploading,
         task: task,
@@ -234,21 +236,26 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
       );
     });
 
-    // Listen to progress
-    task.snapshotEvents.listen((snapshot) {
-      if (!mounted) return;
-      final total = snapshot.totalBytes;
-      final progress = total > 0 ? snapshot.bytesTransferred / total : 0.0;
-      setState(() {
-        _videoUpload = _videoUpload.copyWith(progress: progress);
-      });
-    });
+    // Listen to progress — onError silently ignored; the awaited try/catch
+    // below handles user feedback.
+    task.snapshotEvents.listen(
+      (snapshot) {
+        if (!mounted) return;
+        final total = snapshot.totalBytes;
+        final progress = total > 0 ? snapshot.bytesTransferred / total : 0.0;
+        setState(() {
+          _videoUpload = _videoUpload.copyWith(progress: progress);
+        });
+      },
+      onError: (Object e) {},
+    );
 
-    // Await completion
+    // Await completion — guard with task-identity check so a stale
+    // continuation can't clobber a newer upload.
     try {
       await task;
       final url = await task.snapshot.ref.getDownloadURL();
-      if (!mounted) return;
+      if (!mounted || !identical(task, _videoUpload.task)) return;
       setState(() {
         _videoUrl = url;
         _videoUpload = _UploadState(
@@ -259,7 +266,7 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
       });
     } on FirebaseException catch (e) {
       // Cancelled task throws FirebaseException — reset to idle silently
-      if (!mounted) return;
+      if (!mounted || !identical(task, _videoUpload.task)) return;
       if (e.code == 'canceled') {
         setState(() {
           _videoUpload = const _UploadState();
@@ -273,7 +280,7 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
         );
       }
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || !identical(task, _videoUpload.task)) return;
       setState(() {
         _videoUpload = const _UploadState();
       });
@@ -287,18 +294,6 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
     _videoUpload.task?.cancel();
     if (!mounted) return;
     setState(() {
-      _videoUpload = const _UploadState();
-    });
-  }
-
-  // ignore: unused_element
-  Future<void> _removeVideo() async {
-    if (_videoUrl != null && _videoUrl!.isNotEmpty) {
-      await LessonUploadController.deleteByUrl(_videoUrl!);
-    }
-    if (!mounted) return;
-    setState(() {
-      _videoUrl = null;
       _videoUpload = const _UploadState();
     });
   }
@@ -353,14 +348,18 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
       );
     });
 
-    task.snapshotEvents.listen((snapshot) {
-      if (!mounted) return;
-      final total = snapshot.totalBytes;
-      final progress = total > 0 ? snapshot.bytesTransferred / total : 0.0;
-      setState(() {
-        _docUpload = _docUpload.copyWith(progress: progress);
-      });
-    });
+    // onError silently ignored; the awaited try/catch below handles user feedback.
+    task.snapshotEvents.listen(
+      (snapshot) {
+        if (!mounted) return;
+        final total = snapshot.totalBytes;
+        final progress = total > 0 ? snapshot.bytesTransferred / total : 0.0;
+        setState(() {
+          _docUpload = _docUpload.copyWith(progress: progress);
+        });
+      },
+      onError: (Object e) {},
+    );
 
     try {
       await task;
@@ -400,11 +399,11 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
     }
   }
 
-  Future<void> _removeDocument() async {
+  void _removeDocument() {
+    // Deferred deletion: stash the URL for removal only after a successful save.
     if (_documentUrl != null && _documentUrl!.isNotEmpty) {
-      await LessonUploadController.deleteByUrl(_documentUrl!);
+      _pendingDocDeletion = _documentUrl;
     }
-    if (!mounted) return;
     setState(() {
       _documentUrl = null;
       _documentName = null;
@@ -429,6 +428,15 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
       final transcriptText = _transcriptCtrl.text.trim();
       final bodyText = _bodyCtrl.text.trim();
 
+      // Mode-switch coherence: saving in Text mode while a video URL exists
+      // means the video is no longer referenced — queue it for deferred deletion.
+      if (!_isVideo && _videoUrl != null && _videoUrl!.isNotEmpty) {
+        _pendingVideoDeletion ??= _videoUrl;
+      }
+
+      final savedVideoUrl =
+          _isVideo ? (_videoUrl?.isNotEmpty == true ? _videoUrl : null) : null;
+
       await repo.saveLesson(
         widget.courseId,
         lessonId: existing?['id'] as String?,
@@ -436,12 +444,23 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
         description: _descCtrl.text.trim(),
         durationMinutes: duration,
         order: order,
-        videoUrl: _isVideo ? (_videoUrl?.isNotEmpty == true ? _videoUrl : null) : null,
+        videoUrl: savedVideoUrl,
         transcript: _isVideo ? (transcriptText.isNotEmpty ? transcriptText : null) : null,
         contentHtml: !_isVideo ? (bodyText.isNotEmpty ? bodyText : null) : null,
         documentUrl: _documentUrl?.isNotEmpty == true ? _documentUrl : null,
         documentName: _documentName?.isNotEmpty == true ? _documentName : null,
       );
+
+      // Perform deferred storage deletions only after the Firestore write
+      // succeeds, so that dismissing without saving leaves storage intact.
+      if (_pendingVideoDeletion != null && _pendingVideoDeletion != savedVideoUrl) {
+        await LessonUploadController.deleteByUrl(_pendingVideoDeletion!);
+        _pendingVideoDeletion = null;
+      }
+      if (_pendingDocDeletion != null && _pendingDocDeletion != _documentUrl) {
+        await LessonUploadController.deleteByUrl(_pendingDocDeletion!);
+        _pendingDocDeletion = null;
+      }
 
       if (!mounted) return;
       ref.invalidate(courseEditorLessonsProvider(widget.courseId));
@@ -815,7 +834,16 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
     final active = _isVideo == isVideo;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _isVideo = isVideo),
+        onTap: () {
+          if (_isVideo == isVideo) return;
+          // Cancel any in-flight video upload when switching modes so the
+          // user is not blocked by an invisible background upload.
+          if (_videoUpload.inFlight) {
+            _videoUpload.task?.cancel();
+            _videoUpload = const _UploadState();
+          }
+          setState(() => _isVideo = isVideo);
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
