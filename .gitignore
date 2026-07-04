@@ -48,3 +48,4 @@ app.*.map.json
 design/pencil-backup-*/
 tool/node_modules/
 design/fema-design/clipboard/
+tool/service-account*.json
