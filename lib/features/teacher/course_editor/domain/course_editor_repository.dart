@@ -1,7 +1,5 @@
-// ignore_for_file: use_null_aware_elements
 // Firestore merge-set requires keys to be ABSENT (not null) for partial updates.
-// Null-aware element syntax (?'key': value) includes null-valued entries, which
-// would overwrite existing fields. The if-null guard pattern is intentional here.
+// Null-aware element syntax (?'key': value) omits null-valued entries.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/firestore_service.dart';
 
@@ -41,7 +39,7 @@ class CourseEditorRepository {
         'thumbnailUrl': '',
         'rating': 0,
         'totalStudents': 0,
-        'authorName': authorName,
+        'authorName': ?authorName,
         'learningObjectives': learningObjectives,
       };
 
@@ -78,11 +76,11 @@ class CourseEditorRepository {
   }) =>
       _service.saveCourse({
         'id': courseId,
-        if (title != null) 'title': title,
-        if (description != null) 'description': description,
-        if (subject != null) 'subject': subject,
-        if (grade != null) 'grade': grade,
-        if (learningObjectives != null) 'learningObjectives': learningObjectives,
+        'title': ?title,
+        'description': ?description,
+        'subject': ?subject,
+        'grade': ?grade,
+        'learningObjectives': ?learningObjectives,
       });
 
   Future<void> saveLesson(
@@ -99,7 +97,7 @@ class CourseEditorRepository {
     String? documentName,
   }) =>
       _service.saveLesson(courseId, {
-        if (lessonId != null) 'id': lessonId,
+        'id': ?lessonId,
         'title': title,
         'description': description,
         'durationMinutes': durationMinutes,
