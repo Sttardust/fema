@@ -66,6 +66,16 @@ class LessonUploadController {
               fileName: fileName))
           .putFile(file, SettableMetadata(contentType: mimeFor(fileName)));
 
+  /// Gate for teacher-pasted video links: any http(s) URL with a host.
+  /// External hosting is a supported path when Firebase Storage (Blaze-only
+  /// since Feb 2026) is unavailable.
+  static bool isValidVideoLink(String url) {
+    final uri = Uri.tryParse(url);
+    return uri != null &&
+        (uri.scheme == 'https' || uri.scheme == 'http') &&
+        uri.host.isNotEmpty;
+  }
+
   /// True only for URLs [FirebaseStorage.refFromURL] can resolve — gs:// or
   /// Firebase Storage download URLs. Legacy seeds may point at external hosts.
   static bool isStorageUrl(String url) {

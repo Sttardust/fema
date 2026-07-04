@@ -21,6 +21,15 @@ void main() {
     expect(LessonUploadController.isAllowedDocument('a.exe'), false);
   });
 
+  test('video link gate accepts only http(s) URLs with a host', () {
+    expect(LessonUploadController.isValidVideoLink('https://cdn.example.com/lesson.mp4'), true);
+    expect(LessonUploadController.isValidVideoLink('http://host/video'), true);
+    expect(LessonUploadController.isValidVideoLink('ftp://host/video.mp4'), false);
+    expect(LessonUploadController.isValidVideoLink('https://'), false);
+    expect(LessonUploadController.isValidVideoLink('not a url'), false);
+    expect(LessonUploadController.isValidVideoLink(''), false);
+  });
+
   test('storage URL gate accepts only Firebase Storage URLs', () {
     expect(
       LessonUploadController.isStorageUrl(
