@@ -89,6 +89,18 @@ class FirestoreService {
     }, SetOptions(merge: true));
   }
 
+  Future<void> deleteLesson(String courseId, String lessonId) async {
+    await _db.collection('courses').doc(courseId).collection('lessons').doc(lessonId).delete();
+  }
+
+  Future<void> deleteCourse(String courseId) async {
+    final lessons = await _db.collection('courses').doc(courseId).collection('lessons').get();
+    for (final doc in lessons.docs) {
+      await doc.reference.delete();
+    }
+    await _db.collection('courses').doc(courseId).delete();
+  }
+
   Future<void> saveAttendance(String classId, DateTime date, Map<String, bool> attendance) async {
     final dateStr = "${date.year}-${date.month}-${date.day}";
     await _db.collection('classes').doc(classId).collection('attendance').doc(dateStr).set({
