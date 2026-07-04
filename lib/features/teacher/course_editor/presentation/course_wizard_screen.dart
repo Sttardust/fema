@@ -132,9 +132,7 @@ class _CourseWizardScreenState extends ConsumerState<CourseWizardScreen> {
 
   BasicsData _courseToInitial(Course course) {
     // subject enum → lowercase firestore string
-    final subjectStr = course.subject.name == 'socialStudies'
-        ? 'socialstudies'
-        : course.subject.name;
+    final subjectStr = course.subject.name.toLowerCase();
 
     return BasicsData(
       title: course.title,
