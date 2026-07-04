@@ -13,6 +13,7 @@ import '../../../profile/domain/user_profile_repository.dart';
 import '../domain/course_editor_repository.dart';
 import 'basics_step.dart';
 import 'lessons_step.dart';
+import 'review_step.dart';
 
 // ---------------------------------------------------------------------------
 // Step-indicator metadata
@@ -96,6 +97,7 @@ class _CourseWizardScreenState extends ConsumerState<CourseWizardScreen> {
         );
 
         if (!mounted) return;
+        ref.invalidate(teacherCoursesProvider);
         setState(() {
           _courseId = id;
           _courseTitle = data.title;
@@ -295,7 +297,9 @@ class _CourseWizardScreenState extends ConsumerState<CourseWizardScreen> {
                             courseId: _courseId!,
                             onContinue: () => setState(() => _step = 2),
                           ),
-                    const _StubStep('Review'),
+                    _courseId == null
+                        ? const _StubStep('Review')
+                        : ReviewStep(courseId: _courseId!),
                   ],
                 ),
               ),
