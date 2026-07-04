@@ -20,13 +20,14 @@ import '../domain/lesson_upload_controller.dart';
 // ---------------------------------------------------------------------------
 
 Future<void> showLessonSheet(
-  BuildContext context,
-  WidgetRef ref, {
+  BuildContext context, {
   required String courseId,
   Map<String, dynamic>? existing,
   required List<int> existingOrders,
-}) async {
-  await showModalBottomSheet<void>(
+}) {
+  // The sheet invalidates providers itself on save; cancelling mutates
+  // nothing, so no refresh is needed after it closes.
+  return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -39,8 +40,6 @@ Future<void> showLessonSheet(
       ),
     ),
   );
-  // Invalidate after sheet closes (whether saved or cancelled — idempotent).
-  ref.invalidate(courseEditorLessonsProvider(courseId));
 }
 
 // ---------------------------------------------------------------------------
@@ -882,10 +881,11 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
         onTap: () {
           if (_isVideo == isVideo) return;
           // Cancel any in-flight video upload when switching modes so the
-          // user is not blocked by an invisible background upload.
+          // user is not blocked by an invisible background upload. Goes
+          // through _cancelVideoUpload so an aborted Replace restores the
+          // lesson's original video instead of silently dropping it.
           if (_videoUpload.inFlight) {
-            _videoUpload.task?.cancel();
-            _videoUpload = const _UploadState();
+            _cancelVideoUpload();
           }
           setState(() => _isVideo = isVideo);
         },

@@ -50,16 +50,6 @@ class ReviewStep extends ConsumerStatefulWidget {
 class _ReviewStepState extends ConsumerState<ReviewStep> {
   bool _busy = false;
 
-  @override
-  void initState() {
-    super.initState();
-    // Ensure the teacher courses provider is fresh so a newly-created draft
-    // shows up in the summary card. (Safe to call even if already loaded.)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.invalidate(teacherCoursesProvider);
-    });
-  }
-
   // ─── Publish / Unpublish ───────────────────────────────────────────────────
 
   Future<void> _setStatus(bool publish) async {

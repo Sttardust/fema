@@ -61,11 +61,10 @@ class _LessonsBody extends ConsumerWidget {
   final List<Map<String, dynamic>> lessons;
   final VoidCallback onContinue;
 
-  void _openSheet(BuildContext context, WidgetRef ref, {Map<String, dynamic>? existing}) {
+  void _openSheet(BuildContext context, {Map<String, dynamic>? existing}) {
     final existingOrders = lessons.map((l) => (l['order'] as int?) ?? 0).toList();
     showLessonSheet(
       context,
-      ref,
       courseId: courseId,
       existing: existing,
       existingOrders: existingOrders,
@@ -198,7 +197,7 @@ class _LessonsBody extends ConsumerWidget {
                       key: ValueKey(id),
                       index: i,
                       lesson: lesson,
-                      onEdit: () => _openSheet(context, ref, existing: lesson),
+                      onEdit: () => _openSheet(context, existing: lesson),
                       onDelete: () => _confirmDelete(context, ref, lesson),
                     );
                   },
@@ -209,7 +208,7 @@ class _LessonsBody extends ConsumerWidget {
 
         // Add lesson button
         GestureDetector(
-          onTap: () => _openSheet(context, ref),
+          onTap: () => _openSheet(context),
           child: Container(
             height: 52,
             decoration: BoxDecoration(

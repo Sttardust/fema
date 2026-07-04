@@ -195,17 +195,23 @@ class _CourseWizardScreenState extends ConsumerState<CourseWizardScreen> {
           return _buildScaffold(
             displayTitle: derivedTitle,
             initialData: initialData,
+            isPublished: course.status == CourseStatus.published,
           );
         },
       );
     }
 
-    return _buildScaffold(displayTitle: _courseTitle, initialData: null);
+    return _buildScaffold(
+      displayTitle: _courseTitle,
+      initialData: null,
+      isPublished: false,
+    );
   }
 
   Widget _buildScaffold({
     required String? displayTitle,
     required BasicsData? initialData,
+    required bool isPublished,
   }) {
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -249,7 +255,9 @@ class _CourseWizardScreenState extends ConsumerState<CourseWizardScreen> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'Saved as draft',
+                                // A published course is not a draft — claim
+                                // only that edits are persisted.
+                                isPublished ? 'Saved' : 'Saved as draft',
                                 style: GoogleFonts.figtree(
                                   fontSize: 11.5,
                                   color: AppColors.grey,
