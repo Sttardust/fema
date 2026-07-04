@@ -338,7 +338,7 @@ class _CourseRow extends ConsumerWidget {
         break;
 
       case 'delete':
-        final confirmed = await _showDeleteDialog(context);
+        final confirmed = await _showDeleteDialog(context, course);
         if (confirmed != true) break;
 
         onBusyChanged(true);
@@ -376,7 +376,7 @@ class _CourseRow extends ConsumerWidget {
     }
   }
 
-  Future<bool?> _showDeleteDialog(BuildContext context) {
+  Future<bool?> _showDeleteDialog(BuildContext context, Course course) {
     return showDialog<bool>(
       context: context,
       builder: (ctx) => Dialog(
@@ -399,7 +399,9 @@ class _CourseRow extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Students will lose access and all lessons and files are removed. This cannot be undone.',
+                course.status == CourseStatus.published
+                    ? 'Students will lose access and all lessons and files are removed. This cannot be undone.'
+                    : 'All lessons and files are removed. This cannot be undone.',
                 style: GoogleFonts.figtree(
                   fontSize: 13.5,
                   color: AppColors.grey,
