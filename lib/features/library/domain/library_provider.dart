@@ -78,10 +78,12 @@ class CourseRepository {
       'status': isDraft ? CourseStatus.draft.name : CourseStatus.published.name,
       'rating': course.rating,
       'totalStudents': course.totalStudents,
+      'learningObjectives': course.learningObjectives,
+      'authorName': course.authorName,
     };
-    
+
     final courseId = await _firestoreService.saveCourse(data);
-    
+
     for (var lesson in course.lessons) {
       await _firestoreService.saveLesson(courseId, {
         if (lesson.id.isNotEmpty) 'id': lesson.id,
@@ -90,9 +92,13 @@ class CourseRepository {
         'videoUrl': lesson.videoUrl,
         'contentHtml': lesson.contentHtml,
         'durationMinutes': lesson.durationMinutes,
+        'order': lesson.order,
+        'transcript': lesson.transcript,
+        'documentUrl': lesson.documentUrl,
+        'documentName': lesson.documentName,
       });
     }
-    
+
     return courseId;
   }
 
