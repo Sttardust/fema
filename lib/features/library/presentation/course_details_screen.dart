@@ -249,7 +249,7 @@ class _CourseBanner extends StatelessWidget {
                   const SizedBox(width: 14),
                   _MetaChip(
                     icon: Icons.school,
-                    label: 'Grade ${course.grade}',
+                    label: course.grade,
                   ),
                 ],
               ],
