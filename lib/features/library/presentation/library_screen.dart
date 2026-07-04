@@ -69,11 +69,15 @@ class LibraryScreen extends ConsumerWidget {
                       color: AppColors.grey,
                     ),
                     const SizedBox(width: 10),
-                    Text(
-                      'Search courses, subjects…',
-                      style: GoogleFonts.figtree(
-                        fontSize: 14,
-                        color: AppColors.grey,
+                    Flexible(
+                      child: Text(
+                        'Search courses, subjects…',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.figtree(
+                          fontSize: 14,
+                          color: AppColors.grey,
+                        ),
                       ),
                     ),
                   ],
@@ -247,7 +251,7 @@ class _LibraryCourseRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Grade ${course.grade} · ${course.lessons.length} lessons',
+                  '${course.grade} · ${course.lessons.length} lessons',
                   style: GoogleFonts.figtree(
                     fontSize: 12,
                     color: AppColors.grey,

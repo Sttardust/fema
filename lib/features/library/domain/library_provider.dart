@@ -21,7 +21,7 @@ class CourseRepository {
       
       for (var data in courseData) {
         final lessonsData = await _firestoreService.getLessons(data['id']);
-        final lessons = lessonsData.map((l) => Lesson(
+        final builtLessons = lessonsData.map((l) => Lesson(
           id: l['id'],
           title: l['title'] ?? '',
           description: l['description'] ?? '',
@@ -29,7 +29,20 @@ class CourseRepository {
           contentHtml: l['contentHtml'],
           durationMinutes: l['durationMinutes'] ?? 15,
           isCompleted: false, // In a real app, track per user
+          order: l['order'] ?? 0,
+          transcript: l['transcript'] as String?,
+          documentUrl: l['documentUrl'] as String?,
+          documentName: l['documentName'] as String?,
         )).toList();
+
+        // Sort by (order, fetchIndex) so ordered lessons are sequenced correctly
+        // while legacy lessons (all order == 0) preserve fetch order.
+        final entries = builtLessons.asMap().entries.toList()
+          ..sort((a, b) {
+            final byOrder = a.value.order.compareTo(b.value.order);
+            return byOrder != 0 ? byOrder : a.key.compareTo(b.key);
+          });
+        final lessons = entries.map((e) => e.value).toList();
 
         courses.add(Course(
           id: data['id'],
@@ -43,6 +56,8 @@ class CourseRepository {
           totalStudents: data['totalStudents'] ?? 0,
           ownerId: data['ownerId'] as String?,
           status: _parseStatus(data['status'] as String?),
+          learningObjectives: List<String>.from(data['learningObjectives'] ?? const []),
+          authorName: data['authorName'] as String?,
         ));
       }
       return courses;
@@ -63,10 +78,12 @@ class CourseRepository {
       'status': isDraft ? CourseStatus.draft.name : CourseStatus.published.name,
       'rating': course.rating,
       'totalStudents': course.totalStudents,
+      'learningObjectives': course.learningObjectives,
+      'authorName': course.authorName,
     };
-    
+
     final courseId = await _firestoreService.saveCourse(data);
-    
+
     for (var lesson in course.lessons) {
       await _firestoreService.saveLesson(courseId, {
         if (lesson.id.isNotEmpty) 'id': lesson.id,
@@ -75,9 +92,13 @@ class CourseRepository {
         'videoUrl': lesson.videoUrl,
         'contentHtml': lesson.contentHtml,
         'durationMinutes': lesson.durationMinutes,
+        'order': lesson.order,
+        'transcript': lesson.transcript,
+        'documentUrl': lesson.documentUrl,
+        'documentName': lesson.documentName,
       });
     }
-    
+
     return courseId;
   }
 

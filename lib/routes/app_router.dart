@@ -24,6 +24,8 @@ import '../features/home/presentation/management_placeholder_screen.dart';
 import '../features/home/presentation/admin_home_screen.dart';
 import '../features/teacher/presentation/class_management_screen.dart';
 import '../features/teacher/presentation/teacher_home_screen.dart';
+import '../features/teacher/course_editor/presentation/my_courses_screen.dart';
+import '../features/teacher/course_editor/presentation/course_wizard_screen.dart';
 import '../features/profile/domain/user_profile_repository.dart';
 import 'app_redirect.dart';
 
@@ -147,6 +149,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/teacher/classes',
         builder: (context, state) => const ClassManagementScreen(),
+      ),
+      GoRoute(
+        path: '/teacher/courses',
+        builder: (context, state) => const MyCoursesScreen(),
+      ),
+      GoRoute(
+        path: '/teacher/course/new',
+        builder: (context, state) => const CourseWizardScreen(),
+      ),
+      GoRoute(
+        path: '/teacher/course/:courseId',
+        builder: (context, state) =>
+            CourseWizardScreen(courseId: state.pathParameters['courseId']),
       ),
       GoRoute(
         path: '/admin/management',

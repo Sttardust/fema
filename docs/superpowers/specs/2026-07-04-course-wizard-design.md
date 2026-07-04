@@ -1,0 +1,149 @@
+# FEMA Course-Creation Wizard — Design
+
+**Date:** 2026-07-04
+**Status:** Approved (pending spec review)
+
+## Goal
+
+Teachers author, manage, and publish courses in-app — replacing console seeding as
+the content pipeline. Supersedes the parked `feat/pr10-course-creation-basics`
+concept, rebuilt on the indigo design system.
+
+## Approach (decided)
+
+**Live draft document.** Completing wizard step 1 creates the real
+`courses/{id}` doc with `status: 'draft'`; every later edit writes through
+immediately (auto-save, "Saved as draft" tick in the wizard header). Editing an
+existing course opens the same wizard against its doc — one codepath for
+create and edit. Drafts are owner-only per existing rules; abandoned drafts
+appear in My Courses where the teacher can delete them.
+
+## Scope decisions
+
+| Decision | Choice |
+|---|---|
+| Lesson types | **Video** (device upload + transcript) or **Text** (written lesson body) — segmented toggle in the lesson sheet |
+| Lesson video | Upload from device to Firebase Storage, with progress + cancel + retry; **transcript text field accompanies every video** (feeds the player's Transcript tab) |
+| Document attachment | **Optional PDF/DOC worksheet on any lesson** (both types): uploaded to Storage, shown to students as an "Open worksheet" row in the lesson view (opens externally via the download URL) |
+| Publishing | Teacher publishes directly (Publish/Unpublish toggle); no approval queue |
+| Management | Full: edit course, add/edit/reorder/delete lessons, unpublish, delete course |
+| Draft saving | Auto-save on every step **plus an explicit "Save as draft & exit" button** on the Review step |
+| Thumbnails | Not in v1 — flat subject tints continue to render course art |
+| `language` field | Dropped (model has no field; nothing filters by it) |
+
+## Authoring ↔ consumption audit
+
+Fields the student-facing pages display, and where the wizard asks for them:
+
+| Displayed on course pages | Wizard input |
+|---|---|
+| Title, subject, grade (banner, cards) | Basics step |
+| Description ("About this course") | Basics step |
+| **"What you'll learn" bullets** (Overview card — designed but never rendered for lack of a field) | Basics step: optional objectives list (add/remove rows, max 5) → new `learningObjectives: List<String>` on the course; Overview card renders when non-empty |
+| **Teacher card** (Overview — designed but never rendered) | No input needed: `authorName` is denormalized from the teacher's profile onto the course at creation; Overview renders the card when present |
+| Lessons count + total duration (banner) | Derived from lessons |
+| Lesson title, duration, video (player) | Lesson sheet |
+| **Transcript tab** (player) | Lesson sheet: transcript field on video lessons → new `transcript` field on lessons; player Transcript tab renders it (fallback "No transcript yet") |
+| **Article/text lessons** (player shows 'Article' kind) | Lesson sheet Text mode: body text → existing `contentHtml` field; player shows a reading card instead of the video box for text lessons |
+| Rating, student counts | Not authored (defaults) |
+
+## Data model
+
+- `courses/{id}`: existing fields; wizard writes `title`, `description`,
+  `subject` (lowercase enum string), `grade`, `ownerId`, `status`
+  (`draft`/`published`), plus new **`learningObjectives: List<String>`** and
+  **`authorName: String`** (denormalized from the teacher's profile at
+  creation); initializes `thumbnailUrl: ''`, `rating: 0`, `totalStudents: 0`.
+- `lessons/{id}` gains **`order` (int, 0-based)**, **`transcript: String?`**
+  (video lessons), and **`documentUrl: String?` + `documentName: String?`**
+  (optional worksheet attachment, any lesson type). Text lessons store their
+  body in the existing `contentHtml` field and leave `videoUrl` null. `getLessons` sorts
+  client-side by `order` with fallback to fetch position, so seeded lessons
+  without the field keep working. The seed script adds `order` (and sample
+  transcripts) for parity.
+- Course model/parsers extend accordingly; the Course Overview tab renders the
+  "What you'll learn" and teacher cards when their fields are present, and the
+  player's Transcript tab reads `lesson.transcript`.
+- Delete course = delete each lesson doc, delete Storage videos under the
+  course's folder, then delete the course doc (client-side loop).
+
+## Video upload
+
+- Storage paths: videos `lesson-videos/{uid}/{courseId}/{lessonId}.mp4`;
+  documents `lesson-docs/{uid}/{courseId}/{lessonId}-{fileName}`.
+- New `storage.rules` blocks: writes allowed iff `request.auth.uid == uid`;
+  videos must match `video/.*` and be ≤ 500 MB; documents must match
+  `application/pdf` or the Word MIME types and be ≤ 25 MB. Public read stays
+  (published-course playback and worksheet opening, incl. guests).
+- Client: `file_picker` (one dependency for both video and document picking) →
+  `firebase_storage` `putFile` upload task → progress stream drives a progress
+  bar with cancel; success stores the download URL in the lesson's `videoUrl`
+  (or `documentUrl` + `documentName`). Replacing a file deletes the old object
+  first. Failure → error toast + retry affordance. Students open worksheets
+  externally via `url_launcher`.
+- Ops prerequisite: Storage enabled on `fema-b608b` (RELEASE.md §3a). Until
+  then uploads fail with a clear error toast; the wizard remains usable for
+  text/draft work.
+
+## Screens (designed in fema-design.pen, teacher journey row)
+
+| Screen | Route | Pencil node |
+|---|---|---|
+| My Courses | `/teacher/courses` | `oOYZm` |
+| Wizard — Basics | `/teacher/course/new` (creates doc) · `/teacher/course/:id` (edit) | `dS7Ea` |
+| Wizard — Lessons | step 2 of the wizard | `scFXB` |
+| Add/Edit Lesson sheet | bottom sheet over step 2 | `ieBgI` |
+| Wizard — Review & Publish | step 3 of the wizard | `Y8H03` |
+
+- **My Courses**: back nav, "N courses · M drafts" subtitle, "New course" pill,
+  course rows with tint thumb + Published (green) / Draft (amber) chip +
+  overflow menu (Edit, Unpublish/Publish, Delete). Empty state: "No courses
+  yet" + New course CTA. Teacher home's "My courses" section gets a "See all" →
+  this screen and a create CTA.
+- **Wizard shell**: back button (auto-saved, always safe), 3-segment step
+  indicator, "STEP N OF 3" label, "Saved as draft" tick after first save.
+- **Basics**: title field, subject dropdown, grade dropdown, description
+  multiline; Continue disabled until title + subject + grade are set; Continue
+  creates the doc (first time) and advances.
+- **Lessons**: reorderable rows (drag handle; `ReorderableListView`), each with
+  number tile, title, video status line (green check "Video · mm:ss" / amber
+  "No video yet"), overflow (Edit, Delete). "Add lesson" soft button opens the
+  sheet. Continue requires ≥ 1 lesson.
+- **Lesson sheet** (Pencil nodes `ieBgI` video mode / `btMMR` text mode):
+  Video|Text segmented toggle; title, description, duration (minutes); Video
+  mode adds the upload zone (`primarySoft` card: idle "Upload video · MP4 up
+  to 500 MB" → uploading filename + % + progress track + cancel → done: green
+  check + duration) and a **Transcript** multiline field; Text mode swaps the
+  upload zone + transcript for a **Lesson content** body field. Save lesson
+  writes the lesson doc.
+- **Review & Publish**: summary card, readiness checklist (lessons count,
+  videos uploaded, transcripts coverage, description written — informational;
+  only ≥1 lesson blocks publishing), status card with Draft/Published chip +
+  Publish/Unpublish button + secondary **"Save as draft & exit"** (returns to
+  My Courses), danger "Delete course" row (confirm dialog per design system).
+
+## Rules & routing
+
+- `firestore.rules`: course/lesson owner-write rules already exist
+  (`courses` create by teacher, update/delete by owner; `lessons` write by
+  course owner) — no Firestore rule change expected; verify during
+  implementation.
+- `storage.rules`: add the teacher-upload block above.
+- Router: `/teacher/courses`, `/teacher/course/new`, `/teacher/course/:id`
+  under the existing `/teacher` role guard. Redirect matrix untouched
+  (prefix-guarded already).
+
+## Error handling
+
+- Draft writes ride Firestore's offline persistence; the "Saved" tick reflects
+  the local write.
+- Upload errors surface as toasts with retry; cancel cleans up the upload task.
+- Deleting a published course warns that students lose access (confirm dialog).
+
+## Testing
+
+- Unit: draft repository (order assignment on add/reorder, publish/unpublish
+  transitions, delete cascade ordering), upload-state mapping.
+- Widget (provider overrides, no Firebase): basics validation gates Continue;
+  lessons list renders order + video states; My Courses chips.
+- Existing 52-test suite stays green.

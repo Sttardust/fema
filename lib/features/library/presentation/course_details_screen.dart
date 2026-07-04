@@ -249,7 +249,7 @@ class _CourseBanner extends StatelessWidget {
                   const SizedBox(width: 14),
                   _MetaChip(
                     icon: Icons.school,
-                    label: 'Grade ${course.grade}',
+                    label: course.grade,
                   ),
                 ],
               ],
@@ -374,10 +374,6 @@ class _OverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // course.description is a required non-nullable String on the model.
-    // ownerId exists but no teacher name is available — teacher card omitted.
-    // No learningObjectives field on Course model — objectives card omitted.
-
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       child: Column(
@@ -412,6 +408,109 @@ class _OverviewTab extends StatelessWidget {
               ],
             ),
           ),
+
+          // What you'll learn — only when objectives are present
+          if (course.learningObjectives.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            SoftCard(
+              radius: 18,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'What you\'ll learn',
+                    style: GoogleFonts.figtree(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textBody,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Column(
+                    children: course.learningObjectives.map((objective) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.check_circle_outline,
+                              size: 16,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                objective,
+                                style: GoogleFonts.figtree(
+                                  fontSize: 13,
+                                  color: AppColors.grey,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Teacher card — only when authorName is present and non-empty
+          if (course.authorName?.trim().isNotEmpty == true) ...[
+            const SizedBox(height: 12),
+            SoftCard(
+              radius: 18,
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  // 44px circle avatar with author initial
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primarySoft,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      course.authorName!.trim()[0].toUpperCase(),
+                      style: GoogleFonts.figtree(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        course.authorName!.trim(),
+                        style: GoogleFonts.figtree(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textBody,
+                        ),
+                      ),
+                      Text(
+                        'Course teacher',
+                        style: GoogleFonts.figtree(
+                          fontSize: 12,
+                          color: AppColors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

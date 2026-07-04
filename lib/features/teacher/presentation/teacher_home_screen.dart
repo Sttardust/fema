@@ -336,24 +336,99 @@ class _TeacherDashboard extends ConsumerWidget {
             ),
           ),
 
-          // ── "My courses" section (only shown when there are courses) ──
+          // ── "My courses" section ──
           SliverToBoxAdapter(
             child: coursesAsync.when(
               data: (courses) {
-                if (courses.isEmpty) return const SizedBox.shrink();
+                if (courses.isEmpty) {
+                  // Empty-state: compact "Create your first course" card
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'My courses',
+                          style: GoogleFonts.figtree(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textBody,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SoftCard(
+                          radius: 18,
+                          padding: const EdgeInsets.all(14),
+                          onTap: () => context.push('/teacher/course/new'),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primarySoft,
+                                  borderRadius: BorderRadius.circular(11),
+                                ),
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  Icons.add,
+                                  color: AppColors.primary,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Create your first course',
+                                  style: GoogleFonts.figtree(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textBody,
+                                  ),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.chevron_right,
+                                size: 16,
+                                color: AppColors.grey,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Section header
+                    // Section header with "See all" button
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                      child: Text(
-                        'My courses',
-                        style: GoogleFonts.figtree(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textBody,
-                        ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'My courses',
+                              style: GoogleFonts.figtree(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textBody,
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => context.push('/teacher/courses'),
+                            child: Text(
+                              'See all',
+                              style: GoogleFonts.figtree(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     // Horizontal scroll of course cards

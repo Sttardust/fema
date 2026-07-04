@@ -1,10 +1,30 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Lesson videos are seeded by admins from the console; clients only read.
-    match /lesson-videos/{video=**} {
-      allow read: if true;   // published-course videos are world-readable (guest mode)
-      allow write: if false; // uploads happen via the Firebase console only
+    // Published-course media is world-readable (guest mode). Teachers write
+    // only inside their own uid folder, with type and size limits.
+    match /lesson-videos/{uid}/{courseId}/{fileName} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.contentType.matches('video/.*')
+                   && request.resource.size <= 500 * 1024 * 1024;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+    // Legacy console-seeded videos (flat path) stay readable.
+    match /lesson-videos/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /lesson-docs/{uid}/{courseId}/{fileName} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+                   && request.auth.uid == uid
+                   && (request.resource.contentType == 'application/pdf'
+                       || request.resource.contentType == 'application/msword'
+                       || request.resource.contentType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+                   && request.resource.size <= 25 * 1024 * 1024;
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
     match /{allPaths=**} {
       allow read, write: if false;

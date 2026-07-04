@@ -9,6 +9,10 @@ class Lesson {
   final String? contentHtml;
   final int durationMinutes;
   final bool isCompleted;
+  final int order;
+  final String? transcript;
+  final String? documentUrl;
+  final String? documentName;
 
   Lesson({
     required this.id,
@@ -18,6 +22,10 @@ class Lesson {
     this.contentHtml,
     this.durationMinutes = 15,
     this.isCompleted = false,
+    this.order = 0,
+    this.transcript,
+    this.documentUrl,
+    this.documentName,
   });
 
   Lesson copyWith({
@@ -31,6 +39,10 @@ class Lesson {
       contentHtml: contentHtml,
       durationMinutes: durationMinutes,
       isCompleted: isCompleted ?? this.isCompleted,
+      order: order,
+      transcript: transcript,
+      documentUrl: documentUrl,
+      documentName: documentName,
     );
   }
 }
@@ -47,6 +59,8 @@ class Course {
   final int totalStudents;
   final String? ownerId;
   final CourseStatus status;
+  final List<String> learningObjectives;
+  final String? authorName;
 
   Course({
     required this.id,
@@ -60,6 +74,8 @@ class Course {
     this.totalStudents = 100,
     this.ownerId,
     this.status = CourseStatus.published,
+    this.learningObjectives = const [],
+    this.authorName,
   });
 
   int get completedLessons => lessons.where((l) => l.isCompleted).length;
