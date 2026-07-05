@@ -213,6 +213,16 @@ void main() {
       await tester.tap(find.text('Add lesson'));
       await tester.pumpAndSettle();
 
+      // The upload zone spans the sheet's full content width (390 screen −
+      // 20+20 sheet padding), not hugging its text like on narrow fonts.
+      final zone = tester.getSize(
+        find.ancestor(
+          of: find.text('Upload video'),
+          matching: find.byType(Container),
+        ).first,
+      );
+      expect(zone.width, moreOrLessEquals(350, epsilon: 1));
+
       // Idle zone offers the link alternative.
       await tester.tap(find.text('Paste video link instead', skipOffstage: false));
       await tester.pumpAndSettle();
