@@ -64,7 +64,7 @@ service cloud.firestore {
     match /classes/{classId} {
       allow read, update, delete: if isSignedIn()
                                   && resource.data.teacherId == request.auth.uid;
-      allow create: if isTeacher()
+      allow create: if (isTeacher() || isAdmin())
                     && request.resource.data.teacherId == request.auth.uid;
 
       match /{sub=**} {
