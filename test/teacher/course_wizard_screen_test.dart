@@ -62,5 +62,15 @@ void main() {
       expect(find.text('Saved as draft'), findsNothing);
       expect(find.text('Saved'), findsOneWidget);
     });
+
+    testWidgets('header has a close button to exit the wizard directly',
+        (tester) async {
+      _setPhoneSize(tester);
+      await tester.pumpWidget(_wrap(CourseStatus.draft));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byIcon(Icons.close), findsOneWidget);
+    });
   });
 }

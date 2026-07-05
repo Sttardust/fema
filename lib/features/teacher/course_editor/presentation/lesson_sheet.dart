@@ -695,6 +695,8 @@ class _LessonSheetState extends ConsumerState<_LessonSheet> {
 
   Widget _videoZone() {
     return Container(
+      // Explicit: span the sheet — without this the box hugs its text.
+      width: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.primarySoft,
         borderRadius: BorderRadius.circular(16),

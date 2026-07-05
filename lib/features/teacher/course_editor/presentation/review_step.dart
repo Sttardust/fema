@@ -67,6 +67,9 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
             content: Text(publish ? 'Course published' : 'Course unpublished'),
           ),
         );
+        // Publishing completes the wizard — land on My Courses so the
+        // teacher isn't left stepping back through the wizard to exit.
+        if (publish) context.go('/teacher/courses');
       }
     } catch (_) {
       if (mounted) {

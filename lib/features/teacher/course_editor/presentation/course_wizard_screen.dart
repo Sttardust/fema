@@ -269,6 +269,13 @@ class _CourseWizardScreenState extends ConsumerState<CourseWizardScreen> {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 12),
+                  // Direct exit — stepping back through the wizard to leave
+                  // was the only way out otherwise.
+                  CircleIconButton(
+                    icon: Icons.close,
+                    onTap: () => context.go('/teacher/courses'),
+                  ),
                 ],
               ),
 
