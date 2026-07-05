@@ -5,12 +5,17 @@ service cloud.firestore {
     function isSignedIn() { return request.auth != null; }
     function isSelf(uid)  { return isSignedIn() && request.auth.uid == uid; }
 
-    // Authoritative role lives in Firebase Auth custom claims, set via the
-    // bootstrap admin script. The Firestore users/{uid}.role field is a
-    // denormalized copy for the client UI.
+    // Admin is authoritative in Auth custom claims (promoted server-side via
+    // tool/set-admin.js). Teacher/student live in users/{uid}.role — chosen at
+    // signup, restricted by isSelfAssignableRole, and immutable from the
+    // client afterwards (see the users update rule). No claim exists for
+    // teachers, so teacher checks must read the doc.
     function claimedRole() { return request.auth.token.role; }
     function isAdmin()     { return isSignedIn() && claimedRole() == 'admin'; }
-    function isTeacher()   { return isSignedIn() && claimedRole() == 'teacher'; }
+    function docRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    function isTeacher()   { return isSignedIn() && docRole() == 'teacher'; }
 
     // Roles a client may self-assign during initial profile creation. 'admin'
     // is intentionally excluded — admins must be promoted server-side.
@@ -38,7 +43,7 @@ service cloud.firestore {
       allow read: if resource.data.status == 'published'
                      || (isSignedIn() && resource.data.ownerId == request.auth.uid)
                      || isAdmin();
-      allow create: if isTeacher()
+      allow create: if (isTeacher() || isAdmin())
                     && request.resource.data.ownerId == request.auth.uid;
       allow update, delete: if isSignedIn()
                             && resource.data.ownerId == request.auth.uid;
