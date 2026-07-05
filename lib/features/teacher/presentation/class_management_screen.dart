@@ -8,6 +8,7 @@ import '../../../../core/widgets/soft_card.dart';
 import '../../../../core/widgets/state_views.dart';
 import '../domain/class_models.dart';
 import '../domain/class_repository.dart';
+import 'class_create_sheet.dart';
 
 // ─── Local tab state (students=0, attendance=1) per-class ───
 final _classManagementTabProvider = StateProvider<int>((ref) => 0);
@@ -33,6 +34,23 @@ class ClassManagementScreen extends ConsumerWidget {
           ),
         ),
         centerTitle: false,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: TextButton.icon(
+              onPressed: () => showClassCreateSheet(context),
+              icon: const Icon(Icons.add, size: 16, color: AppColors.primary),
+              label: Text(
+                'New class',
+                style: GoogleFonts.figtree(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: classesAsync.when(
         data: (classes) {
@@ -40,18 +58,10 @@ class ClassManagementScreen extends ConsumerWidget {
             return EmptyStateView(
               icon: Icons.school_outlined,
               message: 'No classes yet',
-              action: PillButton.outlined(
-                label: 'Setup Hint',
-                icon: Icons.info_outline,
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Add class documents under the Firestore `classes` collection with a matching `teacherId`.',
-                      ),
-                    ),
-                  );
-                },
+              action: PillButton(
+                label: 'New class',
+                icon: Icons.add,
+                onPressed: () => showClassCreateSheet(context),
               ),
             );
           }

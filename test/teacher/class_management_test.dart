@@ -1,9 +1,44 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fema/core/services/firestore_service.dart';
+import 'package:fema/features/auth/domain/auth_repository.dart';
 import 'package:fema/features/teacher/presentation/class_management_screen.dart';
 import 'package:fema/features/teacher/domain/class_models.dart';
 import 'package:fema/features/teacher/domain/class_repository.dart';
+
+class _FakeUser extends Fake implements User {
+  @override
+  String get uid => 'teacher-1';
+}
+
+class _FakeFirestoreService extends Fake implements FirestoreService {}
+
+/// Records createClass calls without touching Firebase.
+class _RecordingClassRepo extends TeacherClassRepository {
+  _RecordingClassRepo() : super(_FakeFirestoreService());
+
+  Map<String, dynamic>? created;
+
+  @override
+  Future<String> createClass({
+    required String teacherId,
+    required String subject,
+    required String grade,
+    String? name,
+    String? section,
+  }) async {
+    created = {
+      'teacherId': teacherId,
+      'subject': subject,
+      'grade': grade,
+      'name': name,
+      'section': section,
+    };
+    return 'new-class-id';
+  }
+}
 
 // ignore_for_file: invalid_use_of_protected_member
 
@@ -153,6 +188,77 @@ void main() {
       await tester.pump();
 
       expect(find.text('No classes yet'), findsOneWidget);
+    });
+
+    testWidgets('empty state offers New class and opens the create sheet',
+        (tester) async {
+      _setPhoneSize(tester);
+      await tester.pumpWidget(_wrap(
+        const ClassManagementScreen(),
+        overrides: _classOverrides([]),
+      ));
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.text('New class').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Create class'), findsOneWidget);
+      expect(find.text('Choose a subject'), findsOneWidget);
+      expect(find.text('Choose a grade'), findsOneWidget);
+    });
+
+    testWidgets('creating a class calls the repository with the chosen fields',
+        (tester) async {
+      _setPhoneSize(tester);
+      final repo = _RecordingClassRepo();
+
+      await tester.pumpWidget(_wrap(
+        const ClassManagementScreen(),
+        overrides: [
+          ..._classOverrides([]),
+          teacherClassRepositoryProvider.overrideWithValue(repo),
+          authStateProvider.overrideWith((ref) => Stream.value(_FakeUser())),
+        ],
+      ));
+      await tester.pump();
+      await tester.pump();
+
+      // Keep the auth stream alive so it resolves before the create tap —
+      // in the app the router watches it; in the test nothing else does.
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ClassManagementScreen)),
+      );
+      container.listen(authStateProvider, (_, _) {});
+      await tester.pump();
+
+      await tester.tap(find.text('New class').first);
+      await tester.pumpAndSettle();
+
+      // Create is disabled until subject and grade are chosen.
+      await tester.tap(find.text('Create class'));
+      await tester.pumpAndSettle();
+      expect(repo.created, isNull);
+
+      await tester.tap(find.byType(DropdownButton<String>).at(0));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Math').last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(DropdownButton<String>).at(1));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Grade 7').last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Create class'));
+      await tester.pumpAndSettle();
+
+      expect(repo.created, isNotNull);
+      expect(repo.created!['teacherId'], 'teacher-1');
+      expect(repo.created!['subject'], 'math');
+      expect(repo.created!['grade'], 'Grade 7');
+      // Sheet closed after creating.
+      expect(find.text('Create class'), findsNothing);
     });
   });
 }
