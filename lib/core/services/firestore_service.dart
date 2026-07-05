@@ -58,6 +58,15 @@ class FirestoreService {
     return snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
   }
 
+  Future<String> createClass(Map<String, dynamic> data) async {
+    final docRef = _db.collection('classes').doc();
+    await docRef.set({
+      ...data,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    return docRef.id;
+  }
+
   Future<String> saveCourse(Map<String, dynamic> data) async {
     final docRef = data['id'] != null 
         ? _db.collection('courses').doc(data['id'])
